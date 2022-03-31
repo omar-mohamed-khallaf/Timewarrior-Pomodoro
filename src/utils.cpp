@@ -122,6 +122,7 @@ void utils::SDL2::Sample::play() {
 std::string utils::executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false) {
     int fields[2];  // 0: read fd, 1: write fd
     pipe(fields);
+    char buf[256]{0};
     std::string output;
     auto pid{vfork()};
     switch (pid) {
@@ -134,12 +135,13 @@ std::string utils::executeProcess(const std::string &path, const std::vector<con
             execv(path.c_str(), (char *const *) (args.begin().base()));     // shouldn't return
             break;
         default:
-            waitpid(pid, nullptr, WNOHANG);         // TODO: handle errors
-            char buf[256]{0};
+            // TODO: handle errors
             read(fields[0], buf, sizeof(buf));
+            waitpid(pid, nullptr, WNOHANG);
             output.append(buf);
             if (output.empty()) throw std::runtime_error("Failed to run " + path);
+            break;
     }
-    output.append(1, '\n');                         // make sure we have a line end
-    return output.substr(0, output.find('\n'));     // get one line from output
+    output.append(1, '\n');                             // make sure we have a line end
+    return output.substr(0, output.find('\n') + 1);     // get one line from output
 }
