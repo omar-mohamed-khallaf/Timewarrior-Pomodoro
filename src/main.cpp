@@ -47,12 +47,12 @@ int main() {
                 prevTime = curTime;
             }
             if (task.sessionType == PomodoroSessionType::WORK) {
-                workEndSample.play();
                 try {
                     utils::executeProcess("/usr/bin/timew", {"stop", nullptr});
                 } catch (const std::runtime_error &error) {
                     cmdScreen.putLineFor(error.what(), cmdScreen.getLines(), 0, std::chrono::seconds(1));
                 }
+                workEndSample.play();
             } else if (task.sessionType == PomodoroSessionType::FREE){
                 breakEndSample.play();
             }

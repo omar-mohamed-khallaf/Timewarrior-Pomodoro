@@ -1,5 +1,6 @@
 #include "utils.h"
 #include <thread>
+#include <sys/wait.h>
 
 
 utils::Ncurses::Ncurses() {
@@ -133,6 +134,7 @@ std::string utils::executeProcess(const std::string &path, const std::vector<con
             execv(path.c_str(), (char *const *) (args.begin().base()));     // shouldn't return
             break;
         default:
+            waitpid(pid, nullptr, WNOHANG);         // TODO: handle errors
             char buf[256]{0};
             read(fields[0], buf, sizeof(buf));
             output.append(buf);
