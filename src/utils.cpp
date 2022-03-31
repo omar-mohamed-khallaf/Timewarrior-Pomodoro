@@ -137,7 +137,7 @@ std::string utils::executeProcess(const std::string &path, const std::vector<con
         default:
             // TODO: handle errors
             read(fields[0], buf, sizeof(buf));
-            waitpid(pid, nullptr, WNOHANG);
+            waitpid(pid, nullptr, 0);
             output.append(buf);
             if (output.empty()) throw std::runtime_error("Failed to run " + path);
             break;
