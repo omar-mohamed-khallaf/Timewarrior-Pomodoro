@@ -26,11 +26,13 @@ sudo make install/local
 
 ## Task lists
 - [x] Add sounds after at the end of work and break sessions
-- [ ] Handle errors properly
+- [x] Handle errors properly
+- [ ] Parse output from child process
 - [ ] Make variables configurable
 - [ ] Confirm exit before exiting
 - [ ] Support for `timew start <tags...>` in the interface
 - [ ] Automatic session tracking by handling signals (e.g. from taskwarrior hook scripts)
+- [ ] Use ascii art to print digits adapted to the size of the terminal
 
 ## Usage
 There are only three commands for now

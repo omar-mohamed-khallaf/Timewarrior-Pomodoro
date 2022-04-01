@@ -25,35 +25,17 @@ public:
 namespace utils {
     class Ncurses {
     public:
-        explicit Ncurses() {
-            initscr();
-        }
+        explicit Ncurses();
 
-        ~Ncurses() {
-            endwin();
-        }
+        ~Ncurses();
 
         class Screen {
         public:
-            explicit Screen(WINDOW *window) : lines_(LINES), cols_(COLS) {
-                raw();
-                noecho();
-                keypad(stdscr, true);
-                curs_set(0);
-                window_ = window;
-            }
+            explicit Screen(WINDOW *window) noexcept(false);
 
-            Screen(int height, int width, int y, int x) : lines_(height), cols_(width) {
-                raw();
-                noecho();
-                keypad(stdscr, true);
-                curs_set(0);
-                window_ = newwin(height, width, y, x);
-            }
+            Screen(int height, int width, int y, int x) noexcept(false);
 
-            ~Screen() {
-                delwin(window_);
-            }
+            ~Screen();
 
             char getCharLower();
 
@@ -61,63 +43,39 @@ namespace utils {
 
             int getCols() const;
 
-            void putStringAtLine(const std::string &string, int y, int x);
+            void putLineAt(const std::string &string, int y, int x);
 
-            template<typename Rep, typename Period>
-            void putStringAtFor(const std::string &string, int y, int x, std::chrono::duration<Rep, Period> duration) {
-                putStringAtLine(string, y, x);
-                wrefresh(window_);
-                std::this_thread::sleep_for(duration);
-                move(y, 0);
-                wclrtoeol(window_);
-            };
+            void putLineFor(const std::string &string, int y, int x, std::chrono::seconds duration);
 
             char ask(const std::string &string, const std::string &validChars, unsigned int retries);
 
             void clearScreen();
 
-            void render();
-
         private:
             WINDOW *window_;
-            int lines_;
-            int cols_;
+            int lines_;         // number of lines -1 (to be used as index)
+            int cols_;          // number of columns - 1 (to be use ad index)
         };
     };
 
     class SDL2 {
     public:
-        SDL2() noexcept(false) {
-            if (isInitialized) return;
-            if (SDL_Init(SDL_INIT_AUDIO) < 0) throw std::runtime_error("Failed to initialize SDL2");
-            if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
-                throw std::runtime_error("Failed to initialize SDL2 mixer");
-            isInitialized = true;
-        }
+        SDL2() noexcept(false);
 
-        ~SDL2() {
-            Mix_Quit();
-            SDL_Quit();
-            isInitialized = false;
-        }
+        ~SDL2();
 
         class Sample {
         public:
-            explicit Sample(const std::string &musicFile) : music(Mix_LoadMUS(musicFile.c_str()), Mix_FreeMusic) {
-                if (music == nullptr)
-                    throw std::runtime_error(std::string("Failed to play music: ").append(Mix_GetError()));
-            }
+            explicit Sample(const std::string &musicFile) noexcept(false);
 
-            void play() {
-                Mix_PlayMusic(music.get(), 0);
-            }
+            void play();
 
         private:
-            std::unique_ptr<Mix_Music, void (*)(Mix_Music *)> music;
+            std::unique_ptr<Mix_Music, void (*)(Mix_Music *)> musicPtr_;
         };
 
     private:
-        bool isInitialized = false;
+        bool isInitialized_ = false;
     };
 
     template<typename T>

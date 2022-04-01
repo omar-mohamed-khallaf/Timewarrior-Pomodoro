@@ -25,15 +25,19 @@ int main() {
                 auto pid{vfork()};
                 switch (pid) {
                     case -1:
-                        // TODO: handle errors
-                        break;
+                        cmdScreen.putLineFor("Failed to fork, restart the timer", cmdScreen.getLines(), 0,
+                                             std::chrono::seconds(1));
+                        continue;
                     case 0:
                         dup2(open("/dev/null", O_RDONLY), STDIN_FILENO);
                         dup2(open("/dev/null", O_WRONLY), STDOUT_FILENO);
-                        dup2(open("/dev/null", O_WRONLY), STDOUT_FILENO);
-                        execl("/usr/bin/timew", "continue", nullptr);
+                        dup2(open("/dev/null", O_WRONLY), STDERR_FILENO);
+                        execl("/usr/bin/timew", "continue", nullptr);       // shouldn't return
+                        cmdScreen.putLineFor("/usr/bin/timew failed to execute, is it installed?", cmdScreen.getLines(),
+                                             0, std::chrono::seconds(1));
                         break;
                     default:
+                        // TODO: parse output from child process
                         break;
                 }
             }
@@ -41,9 +45,8 @@ int main() {
             auto prevTime{std::chrono::steady_clock::now()};
             while (task.duration.count() > 0 && isRunning && !isPause) {
                 // TODO: use ascii art to print digits adapted to the size of the terminal
-                tmrScreen.putStringAtLine(utils::formatSeconds<long, std::nano>(task.duration), 1,
-                                          tmrScreen.getCols() / 2 - 5);
-                tmrScreen.render();
+                tmrScreen.putLineAt(utils::formatSeconds<long, std::nano>(task.duration), 1,
+                                    tmrScreen.getCols() / 2 - 5);
                 auto sleepTime{std::chrono::seconds(1) - delta};            // desired sleep time
                 std::this_thread::sleep_for(std::chrono::duration<long, std::nano>(sleepTime));
                 auto curTime = std::chrono::steady_clock::now();
@@ -57,15 +60,19 @@ int main() {
                 auto pid{vfork()};
                 switch (pid) {
                     case -1:
-                        // TODO: handle errors
-                        break;
+                        cmdScreen.putLineFor("Failed to fork, restart the timer", cmdScreen.getLines(), 0,
+                                             std::chrono::seconds(1));
+                        continue;
                     case 0:
                         dup2(open("/dev/null", O_RDONLY), STDIN_FILENO);
                         dup2(open("/dev/null", O_WRONLY), STDOUT_FILENO);
-                        dup2(open("/dev/null", O_WRONLY), STDOUT_FILENO);
-                        execl("/usr/bin/timew", "stop", nullptr);
+                        dup2(open("/dev/null", O_WRONLY), STDERR_FILENO);
+                        execl("/usr/bin/timew", "stop", nullptr);       // shouldn't return
+                        cmdScreen.putLineFor("/usr/bin/timew failed to execute, is it installed?", cmdScreen.getLines(),
+                                             0, std::chrono::seconds(1));
                         break;
                     default:
+                        // TODO: parse output from child process
                         break;
                 }
             } else {
@@ -77,8 +84,7 @@ int main() {
 
 
     auto cmdChar{'\0'};
-    cmdScreen.putStringAtLine("commands: (s)tart, (p)ause, (e)xit", 0, COLS / 2 - 17);
-    cmdScreen.render();
+    cmdScreen.putLineAt("commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
     while ((cmdChar = cmdScreen.getCharLower()) != 'e') {
         switch (cmdChar) {
             case 's':
@@ -89,8 +95,8 @@ int main() {
                     taskQueue.push(
                             {std::chrono::duration<long, std::ratio<60, 1>>(5), PomodoroSessionType::FREE});
                 } else {
-                    cmdScreen.putStringAtFor("A timer is already running", LINES - 1, 0,
-                                             std::chrono::duration<int, std::ratio<1, 1>>(1));
+                    cmdScreen.putLineFor("A timer is already running", cmdScreen.getLines(), 0,
+                                         std::chrono::seconds(1));
                 }
                 break;
             case 'p':
