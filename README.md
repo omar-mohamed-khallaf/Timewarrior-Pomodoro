@@ -1,4 +1,4 @@
-# Pomodoro Timer for Timewarrior
+# Pomodoro Timer for TimeWarrior
 ***
 Pomodoro timer is a timer interface executing `timew continue` and `timew stop`
 commands to mimic pomodoro sessions with
@@ -10,6 +10,11 @@ script that integrates it with
 [timewarrior](https://github.com/GothenburgBitFactory/timewarrior). You can more
 information in their docs.
 
+## Requirements
+- ncurses
+- sdl2
+- sdl2_mixer
+
 ## Installation
 ```bash
 git clone https://github.com/OmarMohamedKhallaf/Timewarrior-Pomodoro.git
@@ -20,9 +25,12 @@ sudo make install/local
 ```
 
 ## Task lists
+- [x] Add sounds after at the end of work and break sessions
 - [ ] Handle errors properly
 - [ ] Make variables configurable
 - [ ] Confirm exit before exiting
+- [ ] Support for `timew start <tags...>` in the interface
+- [ ] Automatic session tracking by handling signals (e.g. from taskwarrior hook scripts)
 
 ## Usage
 There are only three commands for now

@@ -1,14 +1,18 @@
 #include <iostream>
 #include <future>
 #include <iomanip>
+#include <fcntl.h>
 
 #include "utils.h"
 #include "config.h"
 
 int main() {
     utils::Ncurses ncurses;     // handle initialization of ncurses
+    utils::SDL2 sdl2;           // handle initialization of sdl2
     utils::Ncurses::Screen cmdScreen(stdscr);
     utils::Ncurses::Screen tmrScreen(LINES - 2, COLS - 2, 1, 1);
+    utils::SDL2::Sample breakEndSample(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/alarm-clock-elapsed.oga");
+    utils::SDL2::Sample workEndSample(PROJECT_INSTALL_PREFIX"/share/" PROJECT_NAME "/sounds/message.wav");
     utils::Queue<PomodoroSession<long, std::nano>> taskQueue;
     std::atomic<bool> isRunning = true;
     std::atomic<bool> isPause = false;
@@ -24,9 +28,9 @@ int main() {
                         // TODO: handle errors
                         break;
                     case 0:
-                        fclose(stdin);
-                        fclose(stdout);
-                        fclose(stderr);
+                        dup2(open("/dev/null", O_RDONLY), STDIN_FILENO);
+                        dup2(open("/dev/null", O_WRONLY), STDOUT_FILENO);
+                        dup2(open("/dev/null", O_WRONLY), STDOUT_FILENO);
                         execl("/usr/bin/timew", "continue", nullptr);
                         break;
                     default:
@@ -49,26 +53,28 @@ int main() {
                 prevTime = curTime;
             }
             if (task.sessionType == PomodoroSessionType::WORK) {
+                workEndSample.play();
                 auto pid{vfork()};
                 switch (pid) {
                     case -1:
                         // TODO: handle errors
                         break;
                     case 0:
-                        fclose(stdin);
-                        fclose(stdout);
-                        fclose(stderr);
+                        dup2(open("/dev/null", O_RDONLY), STDIN_FILENO);
+                        dup2(open("/dev/null", O_WRONLY), STDOUT_FILENO);
+                        dup2(open("/dev/null", O_WRONLY), STDOUT_FILENO);
                         execl("/usr/bin/timew", "stop", nullptr);
                         break;
                     default:
                         break;
                 }
+            } else {
+                breakEndSample.play();
             }
             tmrScreen.clearScreen();
         }
     });
 
-    unsigned int counter = 120;
 
     auto cmdChar{'\0'};
     cmdScreen.putStringAtLine("commands: (s)tart, (p)ause, (e)xit", 0, COLS / 2 - 17);
@@ -79,9 +85,9 @@ int main() {
                 if (taskQueue.empty()) {
                     isPause = false;
                     taskQueue.push(
-                            {std::chrono::duration<long, std::ratio<60, 1>>(25),PomodoroSessionType::WORK});
+                            {std::chrono::duration<long, std::ratio<60, 1>>(25), PomodoroSessionType::WORK});
                     taskQueue.push(
-                            {std::chrono::duration<long, std::ratio<60, 1>>(25), PomodoroSessionType::FREE});
+                            {std::chrono::duration<long, std::ratio<60, 1>>(5), PomodoroSessionType::FREE});
                 } else {
                     cmdScreen.putStringAtFor("A timer is already running", LINES - 1, 0,
                                              std::chrono::duration<int, std::ratio<1, 1>>(1));

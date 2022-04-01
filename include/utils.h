@@ -4,6 +4,8 @@
 #include <string>
 #include <queue>
 #include <condition_variable>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 
 // TODO: make sessions' times configurable
 constexpr unsigned int SESSION_TIME_SECS = 25 * 60;
@@ -81,6 +83,41 @@ namespace utils {
             int lines_;
             int cols_;
         };
+    };
+
+    class SDL2 {
+    public:
+        SDL2() noexcept(false) {
+            if (isInitialized) return;
+            if (SDL_Init(SDL_INIT_AUDIO) < 0) throw std::runtime_error("Failed to initialize SDL2");
+            if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+                throw std::runtime_error("Failed to initialize SDL2 mixer");
+            isInitialized = true;
+        }
+
+        ~SDL2() {
+            Mix_Quit();
+            SDL_Quit();
+            isInitialized = false;
+        }
+
+        class Sample {
+        public:
+            explicit Sample(const std::string &musicFile) : music(Mix_LoadMUS(musicFile.c_str()), Mix_FreeMusic) {
+                if (music == nullptr)
+                    throw std::runtime_error(std::string("Failed to play music: ").append(Mix_GetError()));
+            }
+
+            void play() {
+                Mix_PlayMusic(music.get(), 0);
+            }
+
+        private:
+            std::unique_ptr<Mix_Music, void (*)(Mix_Music *)> music;
+        };
+
+    private:
+        bool isInitialized = false;
     };
 
     template<typename T>
