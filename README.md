@@ -7,8 +7,8 @@ commands to mimic pomodoro sessions with
 This is intended to be used with
 [taskwarrior](https://github.com/GothenburgBitFactory/taskwarrior) and the hook
 script that integrates it with
-[timewarrior](https://github.com/GothenburgBitFactory/timewarrior). You can more
-information in their docs.
+[timewarrior](https://github.com/GothenburgBitFactory/timewarrior). You can learn
+more information in their docs.
 
 ## Requirements
 - ncurses
