@@ -1,7 +1,6 @@
 #include <iostream>
 #include <future>
 #include <iomanip>
-#include <fcntl.h>
 
 #include "utils.h"
 #include "config.h"
@@ -21,28 +20,20 @@ int main() {
         std::chrono::duration<int, std::nano> delta(0);
         while (isRunning) {
             auto task{taskQueue.pop()};
+            auto prevTime{std::chrono::steady_clock::now()};
             if (task.sessionType == PomodoroSessionType::WORK) {
-                auto pid{vfork()};
-                switch (pid) {
-                    case -1:
-                        cmdScreen.putLineFor("Failed to fork, restart the timer", cmdScreen.getLines(), 0,
-                                             std::chrono::seconds(1));
-                        continue;
-                    case 0:
-                        dup2(open("/dev/null", O_RDONLY), STDIN_FILENO);
-                        dup2(open("/dev/null", O_WRONLY), STDOUT_FILENO);
-                        dup2(open("/dev/null", O_WRONLY), STDERR_FILENO);
-                        execl("/usr/bin/timew", "continue", nullptr);       // shouldn't return
-                        cmdScreen.putLineFor("/usr/bin/timew failed to execute, is it installed?", cmdScreen.getLines(),
-                                             0, std::chrono::seconds(1));
-                        break;
-                    default:
-                        // TODO: parse output from child process
-                        break;
+                try {
+                    auto output = utils::executeProcess("/usr/bin/timew", {"continue", nullptr});
+                    tmrScreen.putLineWrapped(output,
+                                             tmrScreen.getLines() - 3,
+                                             static_cast<int>(tmrScreen.getCols() / 2 - output.length() / 2),
+                                             tmrScreen.getCols() - 2);
+                } catch (const std::runtime_error &error) {
+                    cmdScreen.putLineFor(error.what(), cmdScreen.getLines(), 0, std::chrono::seconds(1));
+                    continue;
                 }
             }
             // timer
-            auto prevTime{std::chrono::steady_clock::now()};
             while (task.duration.count() > 0 && isRunning && !isPause) {
                 // TODO: use ascii art to print digits adapted to the size of the terminal
                 tmrScreen.putLineAt(utils::formatSeconds<long, std::nano>(task.duration), 1,
@@ -57,25 +48,12 @@ int main() {
             }
             if (task.sessionType == PomodoroSessionType::WORK) {
                 workEndSample.play();
-                auto pid{vfork()};
-                switch (pid) {
-                    case -1:
-                        cmdScreen.putLineFor("Failed to fork, restart the timer", cmdScreen.getLines(), 0,
-                                             std::chrono::seconds(1));
-                        continue;
-                    case 0:
-                        dup2(open("/dev/null", O_RDONLY), STDIN_FILENO);
-                        dup2(open("/dev/null", O_WRONLY), STDOUT_FILENO);
-                        dup2(open("/dev/null", O_WRONLY), STDERR_FILENO);
-                        execl("/usr/bin/timew", "stop", nullptr);       // shouldn't return
-                        cmdScreen.putLineFor("/usr/bin/timew failed to execute, is it installed?", cmdScreen.getLines(),
-                                             0, std::chrono::seconds(1));
-                        break;
-                    default:
-                        // TODO: parse output from child process
-                        break;
+                try {
+                    utils::executeProcess("/usr/bin/timew", {"stop", nullptr});
+                } catch (const std::runtime_error &error) {
+                    cmdScreen.putLineFor(error.what(), cmdScreen.getLines(), 0, std::chrono::seconds(1));
                 }
-            } else {
+            } else if (task.sessionType == PomodoroSessionType::FREE){
                 breakEndSample.play();
             }
             tmrScreen.clearScreen();
@@ -83,7 +61,7 @@ int main() {
     });
 
 
-    auto cmdChar{'\0'};
+    char cmdChar;
     cmdScreen.putLineAt("commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
     while ((cmdChar = cmdScreen.getCharLower()) != 'e') {
         switch (cmdChar) {
@@ -95,8 +73,7 @@ int main() {
                     taskQueue.push(
                             {std::chrono::duration<long, std::ratio<60, 1>>(5), PomodoroSessionType::FREE});
                 } else {
-                    cmdScreen.putLineFor("A timer is already running", cmdScreen.getLines(), 0,
-                                         std::chrono::seconds(1));
+                    cmdScreen.putLineFor("Timer is already running", cmdScreen.getLines(), 0, std::chrono::seconds(1));
                 }
                 break;
             case 'p':

@@ -6,13 +6,14 @@
 #include <condition_variable>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
+#include <fcntl.h>
 
 // TODO: make sessions' times configurable
 constexpr unsigned int SESSION_TIME_SECS = 25 * 60;
 constexpr unsigned int BREAK_TIME_SECS = 5 * 60;
 
 enum PomodoroSessionType {
-    FREE, WORK
+    FREE = 1, WORK
 };
 
 template<typename Rep, typename Period>
@@ -46,6 +47,8 @@ namespace utils {
             void putLineAt(const std::string &string, int y, int x);
 
             void putLineFor(const std::string &string, int y, int x, std::chrono::seconds duration);
+
+            void putLineWrapped(const std::string &string, int y, int x, int width);
 
             char ask(const std::string &string, const std::string &validChars, unsigned int retries);
 
@@ -127,5 +130,7 @@ namespace utils {
         char buf[64];
         std::strftime(buf, sizeof(buf), "%H:%M:%S", &time);
         return {buf};
-    };
+    }
+
+    std::string executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false);
 }
