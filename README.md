@@ -26,8 +26,9 @@ sudo make install/local
 
 ## Task lists
 - [x] Add sounds after at the end of work and break sessions
-- [x] Handle errors properly
 - [x] Parse output from child process
+- [ ] Adapt to changes in terminal size
+- [ ] Handle errors properly (is timew installed ?)
 - [ ] Make variables configurable
 - [ ] Confirm exit before exiting
 - [ ] Support for `timew start <tags...>` in the interface
