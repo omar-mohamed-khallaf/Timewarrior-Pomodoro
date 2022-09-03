@@ -71,5 +71,6 @@ void OpenSlAudioPlayer::load(const std::string &audioFile) {
 }
 
 void OpenSlAudioPlayer::play(const std::string &audioFile) {
+    (*audio_.at(audioFile))->SetPlayState(audio_[audioFile], SL_PLAYSTATE_STOPPED);
     (*audio_.at(audioFile))->SetPlayState(audio_[audioFile], SL_PLAYSTATE_PLAYING);
 }
