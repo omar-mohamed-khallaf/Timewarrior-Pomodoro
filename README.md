@@ -21,9 +21,9 @@ more information in their docs.
 ```bash
 git clone https://github.com/OmarMohamedKhallaf/Timewarrior-Pomodoro.git pomo
 cd pomo
-mkdir build && cd build
-cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release ..
-sudo make install
+# Use -DCMAKE_INSTALL_PREFIX=$PREFIX/usr for termux on android
+cmake -B build -S ./ -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel 4 --target install
 ```
 
 ## Task lists
