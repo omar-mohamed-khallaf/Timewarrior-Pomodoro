@@ -1,4 +1,6 @@
 # Pomodoro Timer for TimeWarrior
+
+---
 ***
 Pomodoro timer is a timer interface executing `timew continue` and `timew stop`
 commands to mimic pomodoro sessions with
@@ -12,16 +14,16 @@ more information in their docs.
 
 ## Requirements
 - ncurses
-- sdl2
-- sdl2_mixer
+- OpenAL
+- OpenSLES (Only for android)
 
 ## Installation
 ```bash
-git clone https://github.com/OmarMohamedKhallaf/Timewarrior-Pomodoro.git
-cd Timewarrior-Pomodoro
+git clone https://github.com/OmarMohamedKhallaf/Timewarrior-Pomodoro.git pomo
+cd pomo
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-sudo make install/local
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release ..
+sudo make install
 ```
 
 ## Task lists
