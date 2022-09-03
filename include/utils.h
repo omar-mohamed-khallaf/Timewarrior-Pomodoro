@@ -1,12 +1,11 @@
 #pragma once
 
 #include <ncurses.h>
-#include <string>
 #include <queue>
 #include <condition_variable>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
-#include <fcntl.h>
+#ifndef __ANDROID__
+#include <AL/al.h>
+#endif
 
 // TODO: make sessions' times configurable
 constexpr unsigned int SESSION_TIME_SECS = 25 * 60;
@@ -61,26 +60,6 @@ namespace utils {
         };
     };
 
-    class SDL2 {
-    public:
-        SDL2() noexcept(false);
-
-        ~SDL2();
-
-        class Sample {
-        public:
-            explicit Sample(const std::string &musicFile) noexcept(false);
-
-            void play();
-
-        private:
-            std::unique_ptr<Mix_Music, void (*)(Mix_Music *)> musicPtr_;
-        };
-
-    private:
-        bool isInitialized_ = false;
-    };
-
     template<typename T>
     class Queue {
     public:
@@ -133,4 +112,49 @@ namespace utils {
     }
 
     std::string executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false);
+
+    class WavReader {
+    public:
+        static std::unique_ptr<char>
+        loadWAV(const std::string &audioFile, unsigned int &chan, unsigned int &sampleRate, unsigned int &bps,
+                unsigned int &size);
+
+    private:
+        struct WavHeader {
+            /* RIFF Chunk Descriptor */
+            uint8_t riff[4];
+            uint32_t chunkSize;
+            uint8_t waveHeader[4];
+            /* "fmt" sub-chunk */
+            uint8_t fmt[4];
+            uint32_t subChunk1Size;
+            uint16_t audioFormat;
+            uint16_t numOfChan;
+            uint32_t samplesPerSec;
+            uint32_t bytesPerSec;
+            uint16_t blockAlign;
+            uint16_t bitsPerSample;
+            /* "data" sub-chunk */
+            uint8_t subChunk2ID[4];
+            uint32_t subChunk2Size;
+        };
+    };
+
+#ifndef __ANDROID__
+    inline unsigned int getAlAudioFormat(unsigned int channel, unsigned int bps) {
+        if (channel == 1) {
+            if (bps == 8) {
+                return AL_FORMAT_MONO8;
+            } else {
+                return AL_FORMAT_MONO16;
+            }
+        } else {
+            if (bps == 8) {
+                return AL_FORMAT_STEREO8;
+            } else {
+                return AL_FORMAT_STEREO16;
+            }
+        }
+    }
+#endif
 }

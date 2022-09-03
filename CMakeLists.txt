@@ -1,18 +1,37 @@
 cmake_minimum_required(VERSION 3.22)
-project(tw-pomodoro VERSION "1.3.1")
+project(tw-pomodoro VERSION "2.0.0")
 
 configure_file(include/config.h.in config.h)
 set(CMAKE_CXX_STANDARD 20)
 
 aux_source_directory(src/ SRC)
+
+if (ANDROID)
+    aux_source_directory(src/sound/platform/android SRC)
+else ()
+    aux_source_directory(src/sound/platform/desktop SRC)
+endif ()
+
+aux_source_directory(src/sound SRC)
+
 add_executable(${PROJECT_NAME} ${SRC})
 
-target_include_directories(${PROJECT_NAME} PRIVATE include/ ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE
+        include/
+        ${CMAKE_CURRENT_BINARY_DIR})
 
-find_library(SDL2 SDL2 REQUIRED)
-find_library(SDL_MIXER SDL2_mixer REQUIRED)
 find_library(NCURSES ncurses REQUIRED)
-target_link_libraries(${PROJECT_NAME} ${SDL2} ${SDL_MIXER} ${NCURSES})
+if (ANDROID)
+    target_link_libraries(${PROJECT_NAME} -lOpenSLES)
+else()
+    find_library(OPENAL openal REQUIRED)
+    find_library(VORBIS vorbis REQUIRED)
+    find_library(VORBIS_FILE vorbisfile REQUIRED)
+    target_link_libraries(${PROJECT_NAME} ${OPENAL} ${VORBIS} ${VORBIS_FILE})
+
+endif ()
+
+target_link_libraries(${PROJECT_NAME} ${NCURSES})
 
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION bin

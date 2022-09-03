@@ -1,7 +1,10 @@
-#include "utils.h"
 #include <thread>
+#include <fcntl.h>
+#include <unistd.h>
+#include <iostream>
 #include <sys/wait.h>
 
+#include "utils.h"
 
 utils::Ncurses::Ncurses() {
     initscr();
@@ -24,7 +27,7 @@ utils::Ncurses::Screen::~Screen() {
     delwin(window_);
 }
 
-char utils::Ncurses::Screen::getCharLower() {
+auto utils::Ncurses::Screen::getCharLower() -> char {
     return static_cast<char>(std::tolower(wgetch(window_)));
 }
 
@@ -63,7 +66,8 @@ void utils::Ncurses::Screen::putLineWrapped(const std::string &string, int y, in
 }
 
 
-char utils::Ncurses::Screen::ask(const std::string &string, const std::string &validChars, unsigned int retries) {
+auto
+utils::Ncurses::Screen::ask(const std::string &string, const std::string &validChars, unsigned int retries) -> char {
     char ans;
     while (retries--) {
         putLineAt(string, 0, 0);
@@ -81,42 +85,17 @@ void utils::Ncurses::Screen::clearScreen() {
     wclear(window_);
 }
 
-int utils::Ncurses::Screen::getLines() const {
+auto utils::Ncurses::Screen::getLines() const -> int {
     return lines_;
 }
 
-int utils::Ncurses::Screen::getCols() const {
+auto utils::Ncurses::Screen::getCols() const -> int {
     return cols_;
 }
 
 utils::Ncurses::Screen::Screen(WINDOW *window) : lines_(LINES - 1), cols_(COLS - 1) {
     window_ = window;
     keypad(window_, true);
-}
-
-
-utils::SDL2::SDL2() {
-    if (isInitialized_) return;
-    if (SDL_Init(SDL_INIT_AUDIO) < 0) throw std::runtime_error("Failed to initialize SDL2");
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
-        throw std::runtime_error("Failed to initialize SDL2 mixer");
-    isInitialized_ = true;
-}
-
-utils::SDL2::~SDL2() {
-    Mix_Quit();
-    SDL_Quit();
-    isInitialized_ = false;
-}
-
-utils::SDL2::Sample::Sample(const std::string &musicFile) : musicPtr_(Mix_LoadMUS(musicFile.c_str()), Mix_FreeMusic) {
-    if (musicPtr_ == nullptr)
-        throw std::runtime_error(std::string("Failed to play musicPtr_: ").append(Mix_GetError()));
-
-}
-
-void utils::SDL2::Sample::play() {
-    Mix_PlayMusic(musicPtr_.get(), 0);
 }
 
 std::string utils::executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false) {
@@ -144,4 +123,20 @@ std::string utils::executeProcess(const std::string &path, const std::vector<con
     }
     output.append(1, '\n');                             // make sure we have a line end
     return output.substr(0, output.find('\n') + 1);     // get one line from output
+}
+
+
+std::unique_ptr<char>
+utils::WavReader::loadWAV(const std::string &audioFile, unsigned int &chan, unsigned int &sampleRate, unsigned int &bps,
+                          unsigned int &size) {
+    auto file = std::unique_ptr<FILE, decltype(&fclose)>(std::fopen(audioFile.c_str(), "r"), fclose);
+    struct WavHeader wavHeader{};
+    std::fread(&wavHeader, 1, sizeof(wavHeader), file.get());
+    chan = wavHeader.numOfChan;
+    sampleRate = wavHeader.samplesPerSec;
+    bps = wavHeader.bitsPerSample;
+    size = wavHeader.subChunk2Size;
+    auto buffer = std::unique_ptr<char>(new char[size]);
+    std::fread(buffer.get(), sizeof(char), size, file.get());
+    return buffer;
 }
