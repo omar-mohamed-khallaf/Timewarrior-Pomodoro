@@ -4,14 +4,16 @@
 
 #include "utils.h"
 #include "config.h"
+#include "sound/AudioPlayer.h"
 
-int main() {
+auto main() -> int {
     utils::Ncurses ncurses;     // handle initialization of ncurses
-    utils::SDL2 sdl2;           // handle initialization of sdl2
     utils::Ncurses::Screen cmdScreen(stdscr);
     utils::Ncurses::Screen tmrScreen(LINES - 2, COLS - 2, 1, 1);
-    utils::SDL2::Sample breakEndSample(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/alarm-clock-elapsed.oga");
-    utils::SDL2::Sample workEndSample(PROJECT_INSTALL_PREFIX"/share/" PROJECT_NAME "/sounds/message.wav");
+    AudioPlayer audioPlayer;
+    audioPlayer.load(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Synth_Brass.ogg");
+    audioPlayer.load(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Retro_Synth.ogg");
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     utils::Queue<PomodoroSession<long, std::nano>> taskQueue;
     std::atomic<bool> isRunning = true;
     std::atomic<bool> isPause = false;
@@ -24,8 +26,7 @@ int main() {
             if (task.sessionType == PomodoroSessionType::WORK) {
                 try {
                     auto output = utils::executeProcess("/usr/bin/timew", {"continue", nullptr});
-                    tmrScreen.putLineWrapped(output,
-                                             tmrScreen.getLines() - 3,
+                    tmrScreen.putLineWrapped(output, tmrScreen.getLines() - 3,
                                              static_cast<int>(tmrScreen.getCols() / 2 - output.length() / 2),
                                              tmrScreen.getCols() - 2);
                 } catch (const std::runtime_error &error) {
@@ -52,9 +53,9 @@ int main() {
                 } catch (const std::runtime_error &error) {
                     cmdScreen.putLineFor(error.what(), cmdScreen.getLines(), 0, std::chrono::seconds(1));
                 }
-                workEndSample.play();
-            } else if (task.sessionType == PomodoroSessionType::FREE){
-                breakEndSample.play();
+                audioPlayer.play(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Retro_Synth.ogg");
+            } else if (task.sessionType == PomodoroSessionType::FREE) {
+                audioPlayer.play(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Synth_Brass.ogg");
             }
             tmrScreen.clearScreen();
         }
@@ -68,10 +69,8 @@ int main() {
             case 's':
                 if (taskQueue.empty()) {
                     isPause = false;
-                    taskQueue.push(
-                            {std::chrono::duration<long, std::ratio<60, 1>>(25), PomodoroSessionType::WORK});
-                    taskQueue.push(
-                            {std::chrono::duration<long, std::ratio<60, 1>>(5), PomodoroSessionType::FREE});
+                    taskQueue.push({std::chrono::duration<long, std::ratio<60, 1>>(25), PomodoroSessionType::WORK});
+                    taskQueue.push({std::chrono::duration<long, std::ratio<60, 1>>(5), PomodoroSessionType::FREE});
                 } else {
                     cmdScreen.putLineFor("Timer is already running", cmdScreen.getLines(), 0, std::chrono::seconds(1));
                 }
