@@ -1,27 +1,28 @@
 #include <cassert>
 #include "sound/platform/android/OpenSlAudioPlayer.h"
 
+
 OpenSlAudioPlayer::OpenSlAudioPlayer() {
-    SLresult result = slCreateEngine(&slEngineObjectItf_, 0, nullptr, 0, nullptr, nullptr);
+    SLresult result = slCreateEngine(&slEngineObj_, 0, nullptr, 0, nullptr, nullptr);
     assert(SL_RESULT_SUCCESS == result);
 
-    result = (*slEngineObjectItf_)->Realize(slEngineObjectItf_, SL_BOOLEAN_FALSE);
+    result = (*slEngineObj_)->Realize(slEngineObj_, SL_BOOLEAN_FALSE);
     assert(SL_RESULT_SUCCESS == result);
 
-    result = (*slEngineObjectItf_)->GetInterface(slEngineObjectItf_, SL_IID_ENGINE, &slEngineItf_);
+    result = (*slEngineObj_)->GetInterface(slEngineObj_, SL_IID_ENGINE, &slEngineItf_);
     assert(SL_RESULT_SUCCESS == result);
 
-    result = (*slEngineItf_)->CreateOutputMix(slEngineItf_, &slOutputMixObject_, 0, nullptr, nullptr);
+    result = (*slEngineItf_)->CreateOutputMix(slEngineItf_, &slOutputMixObj_, 0, nullptr, nullptr);
     assert(SL_RESULT_SUCCESS == result);
 
-    result = (*slOutputMixObject_)->Realize(slOutputMixObject_, SL_BOOLEAN_FALSE);
+    result = (*slOutputMixObj_)->Realize(slOutputMixObj_, SL_BOOLEAN_FALSE);
     assert(SL_RESULT_SUCCESS == result);
-
-
 }
 
 OpenSlAudioPlayer::~OpenSlAudioPlayer() {
-
+    (*slAudioPlayerObj_)->Destroy(slAudioPlayerObj_);
+    (*slOutputMixObj_)->Destroy(slOutputMixObj_);
+    (*slEngineObj_)->Destroy(slEngineObj_);
 }
 
 void OpenSlAudioPlayer::load(const std::string &audioFile) {
@@ -32,42 +33,39 @@ void OpenSlAudioPlayer::load(const std::string &audioFile) {
     SLDataSource slDataSource = {&slDataLocatorUri, &slDataFormatMime};
 
     // configure audio sink
-    SLDataLocator_OutputMix slDataLocatorOutputMix = {SL_DATALOCATOR_OUTPUTMIX, slOutputMixObject_};
+    SLDataLocator_OutputMix slDataLocatorOutputMix = {SL_DATALOCATOR_OUTPUTMIX, slOutputMixObj_};
     SLDataSink audioSnk = {&slDataLocatorOutputMix, nullptr};
 
     // create audio player
-    SLObjectItf uriPlayerObject;
     std::size_t reqItfSize = 1;
     SLInterfaceID ids[2] = {SL_IID_SEEK, nullptr};
     SLboolean req[2] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE};
 #ifdef __ANDROID__
     ids[reqItfSize++] = SL_IID_ANDROIDCONFIGURATION;
 #endif
-    (*slEngineItf_)->CreateAudioPlayer(slEngineItf_, &uriPlayerObject, &slDataSource, &audioSnk, reqItfSize, ids, req);
+    (*slEngineItf_)->CreateAudioPlayer(slEngineItf_, &slAudioPlayerObj_, &slDataSource, &audioSnk, reqItfSize, ids,
+                                       req);
 #ifdef __ANDROID__
     SLAndroidConfigurationItf androidConfig;
-    result = (*uriPlayerObject)->GetInterface(uriPlayerObject, SL_IID_ANDROIDCONFIGURATION, &androidConfig);
+    result = (*slAudioPlayerObj_)->GetInterface(slAudioPlayerObj_, SL_IID_ANDROIDCONFIGURATION, &androidConfig);
     assert(SL_RESULT_SUCCESS == result);
     result = (*androidConfig)->SetConfiguration(androidConfig, SL_ANDROID_KEY_STREAM_TYPE, &this->androidStreamType, sizeof(SLint32));
     assert(SL_RESULT_SUCCESS == result);
 #endif
 
-    result = (*uriPlayerObject)->Realize(uriPlayerObject, SL_BOOLEAN_FALSE);
-    // this will always succeed on Android, but we check result for portability to other platforms
+    result = (*slAudioPlayerObj_)->Realize(slAudioPlayerObj_, SL_BOOLEAN_FALSE);
     assert(SL_RESULT_SUCCESS == result);
 
-    SLPlayItf uriPlayerItf;
-    result = (*uriPlayerObject)->GetInterface(uriPlayerObject, SL_IID_PLAY, &uriPlayerItf);
+    SLSeekItf audioPlayerSeekItf;
+    result = (*slAudioPlayerObj_)->GetInterface(slAudioPlayerObj_, SL_IID_SEEK, &audioPlayerSeekItf);
+    assert(SL_RESULT_SUCCESS == result);
+    result = (*audioPlayerSeekItf)->SetLoop(audioPlayerSeekItf, (SLboolean) false, 0, SL_TIME_UNKNOWN);
     assert(SL_RESULT_SUCCESS == result);
 
-    SLSeekItf uriPlayerSeekItf;
-    result = (*uriPlayerObject)->GetInterface(uriPlayerObject, SL_IID_SEEK, &uriPlayerSeekItf);
+    SLPlayItf audioPlayerPlayItf;
+    result = (*slAudioPlayerObj_)->GetInterface(slAudioPlayerObj_, SL_IID_PLAY, &audioPlayerPlayItf);
     assert(SL_RESULT_SUCCESS == result);
-
-    result = (*uriPlayerSeekItf)->SetLoop(uriPlayerSeekItf, (SLboolean) false, 0, SL_TIME_UNKNOWN);
-    assert(SL_RESULT_SUCCESS == result);
-
-    audio_[audioFile] = uriPlayerItf;
+    audio_[audioFile] = audioPlayerPlayItf;
 }
 
 void OpenSlAudioPlayer::play(const std::string &audioFile) {
