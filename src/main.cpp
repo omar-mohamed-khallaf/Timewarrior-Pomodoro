@@ -13,7 +13,6 @@ auto main() -> int {
     AudioPlayer audioPlayer;
     audioPlayer.load(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Synth_Brass.ogg");
     audioPlayer.load(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Retro_Synth.ogg");
-    std::this_thread::sleep_for(std::chrono::seconds(2));
     utils::Queue<PomodoroSession<long, std::nano>> taskQueue;
     std::atomic<bool> isRunning = true;
     std::atomic<bool> isPause = false;
