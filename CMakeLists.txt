@@ -22,16 +22,14 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 find_library(NCURSES ncurses REQUIRED)
 if (ANDROID)
-    target_link_libraries(${PROJECT_NAME} -lOpenSLES)
-else()
+    target_link_libraries(${PROJECT_NAME} ${NCURSES} -lOpenSLES)
+else ()
     find_library(OPENAL openal REQUIRED)
     find_library(VORBIS vorbis REQUIRED)
     find_library(VORBIS_FILE vorbisfile REQUIRED)
-    target_link_libraries(${PROJECT_NAME} ${OPENAL} ${VORBIS} ${VORBIS_FILE})
+    target_link_libraries(${PROJECT_NAME} ${NCURSES} ${OPENAL} ${VORBIS} ${VORBIS_FILE})
 
 endif ()
-
-target_link_libraries(${PROJECT_NAME} ${NCURSES})
 
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION bin

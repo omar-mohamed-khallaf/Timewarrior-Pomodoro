@@ -11,13 +11,13 @@ auto main() -> int {
     utils::Ncurses::Screen cmdScreen(stdscr);
     utils::Ncurses::Screen tmrScreen(LINES - 2, COLS - 2, 1, 1);
     AudioPlayer audioPlayer;
-    audioPlayer.load(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Synth_Brass.ogg");
-    audioPlayer.load(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Retro_Synth.ogg");
     utils::Queue<PomodoroSession<long, std::nano>> taskQueue;
     std::atomic<bool> isRunning = true;
     std::atomic<bool> isPause = false;
 
     std::thread worker([&] {
+        audioPlayer.load(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Synth_Brass.ogg");
+        audioPlayer.load(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Retro_Synth.ogg");
         std::chrono::duration<int, std::nano> delta(0);
         while (isRunning) {
             auto task{taskQueue.pop()};

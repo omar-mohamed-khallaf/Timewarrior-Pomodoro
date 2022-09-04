@@ -1,5 +1,4 @@
 #include <fstream>
-#include <memory>
 #include <vector>
 #include <vorbis/vorbisfile.h>
 
@@ -38,7 +37,7 @@ static bool checkAlErrors(const std::string &filename, const std::uint_fast32_t 
     return true;
 }
 
-bool checkAlcErrors(const std::string &filename, const std::uint_fast32_t line, ALCdevice *device) {
+static bool checkAlcErrors(const std::string &filename, const std::uint_fast32_t line, ALCdevice *device) {
     ALCenum error = alcGetError(device);
     if (error != ALC_NO_ERROR) {
         std::cerr << "***ERROR*** (" << filename << ": " << line << ")\n";
@@ -68,33 +67,34 @@ bool checkAlcErrors(const std::string &filename, const std::uint_fast32_t line, 
 }
 
 template<typename AlFunction, typename ...Params>
-auto alCallImpl(const char *filename, std::uint_fast32_t line, AlFunction function,
-                Params... params) -> typename std::enable_if_t<!std::is_same_v<void, decltype(function(
+static auto alCallImpl(const char *filename, std::uint_fast32_t line, AlFunction function,
+                       Params... params) -> typename std::enable_if_t<!std::is_same_v<void, decltype(function(
         params...))>, decltype(function(params...))> {
     auto ret = function(std::forward<Params>(params)...);
-    checkAlErrors(ret);
+    checkAlErrors(filename, line);
     return ret;
 }
 
 template<typename AlFunction, typename ...Params>
-auto alCallImpl(const char *filename, std::uint_fast32_t line, AlFunction function,
-                Params... params) -> std::enable_if_t<std::is_same_v<void, decltype(function(params...))>, bool> {
+static auto alCallImpl(const char *filename, std::uint_fast32_t line, AlFunction function,
+                       Params... params) -> typename std::enable_if_t<std::is_same_v<void, decltype(function(
+        params...))>, bool> {
     function(std::forward<Params>(params)...);
     return checkAlErrors(filename, line);
 }
 
 template<typename AlcFunction, typename ReturnType, typename... Params>
-auto alcCallImpl(const char *filename, const std::uint_fast32_t line, AlcFunction function, ReturnType &ret,
-                 ALCdevice *device,
-                 Params... params) -> typename std::enable_if_t<!std::is_same_v<void, decltype(function(
+static auto alcCallImpl(const char *filename, const std::uint_fast32_t line, AlcFunction function, ReturnType &ret,
+                        ALCdevice *device,
+                        Params... params) -> typename std::enable_if_t<!std::is_same_v<void, decltype(function(
         params...))>, bool> {
     ret = function(std::forward<Params>(params)...);
     return checkAlcErrors(filename, line, device);
 }
 
 template<typename AlcFunction, typename... Params>
-auto alcCallImpl(const char *filename, const std::uint_fast32_t line, AlcFunction function, ALCdevice *device,
-                 Params... params) -> typename std::enable_if_t<std::is_same_v<void, decltype(function(
+static auto alcCallImpl(const char *filename, const std::uint_fast32_t line, AlcFunction function, ALCdevice *device,
+                        Params... params) -> typename std::enable_if_t<std::is_same_v<void, decltype(function(
         params...))>, bool> {
     function(std::forward<Params>(params)...);
     return checkAlcErrors(filename, line, device);
@@ -119,7 +119,7 @@ OpenAlAudioPlayer::~OpenAlAudioPlayer() {
 
 void OpenAlAudioPlayer::load(const std::string &audioFile) {
     auto extension = audioFile.substr(audioFile.find_last_of('.'));
-    auto dataSource = std::unique_ptr<FILE, decltype(&fclose)>(fopen(audioFile.c_str(), "rb"), fclose);
+    auto dataSource = fopen(audioFile.c_str(), "rb");
     if (dataSource == nullptr) throw std::runtime_error("Failed to open file: " + audioFile);
 
     ALuint alSource;
@@ -134,8 +134,8 @@ void OpenAlAudioPlayer::load(const std::string &audioFile) {
 
     if (extension == ".ogg") {
         OggVorbis_File vorbisFile;
-        ov_open_callbacks(dataSource.get(), &vorbisFile, nullptr, -1, OV_CALLBACKS_DEFAULT);
-        auto vorbisInfo = std::unique_ptr<vorbis_info>(ov_info(&vorbisFile, -1));
+        ov_open_callbacks(dataSource, &vorbisFile, nullptr, -1, OV_CALLBACKS_DEFAULT);
+        auto vorbisInfo = ov_info(&vorbisFile, -1);
         std::vector<char> decodedSound;
         char buffer[4096];
         for (ssize_t size; (size = ov_read(&vorbisFile, buffer, 4096, 0, 2, 1, nullptr)) != 0;) {
@@ -144,6 +144,7 @@ void OpenAlAudioPlayer::load(const std::string &audioFile) {
         }
         alCall(alBufferData, alBuffer, utils::getAlAudioFormat(vorbisInfo->channels, 16), decodedSound.data(),
                decodedSound.size(), vorbisInfo->rate);
+        ov_clear(&vorbisFile);
     } else if (extension == ".wav") {
         unsigned int channel, sampleRate, bps, size;
         auto buffer = utils::WavReader::loadWAV(audioFile, channel, sampleRate, bps, size);
