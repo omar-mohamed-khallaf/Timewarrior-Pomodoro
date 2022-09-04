@@ -142,13 +142,11 @@ void OpenAlAudioPlayer::load(const std::string &audioFile) {
             if (size < 0) throw std::runtime_error("Failed to decode ogg file");
             decodedSound.insert(decodedSound.end(), buffer, buffer + size);
         }
-        std::cout << vorbisInfo->channels << " " << vorbisInfo->rate << std::endl;
         alCall(alBufferData, alBuffer, utils::getAlAudioFormat(vorbisInfo->channels, 16), decodedSound.data(),
                decodedSound.size(), vorbisInfo->rate);
     } else if (extension == ".wav") {
         unsigned int channel, sampleRate, bps, size;
         auto buffer = utils::WavReader::loadWAV(audioFile, channel, sampleRate, bps, size);
-        std::cout << channel << " " << sampleRate << " " << bps << buffer << " " << std::endl;
         alCall(alBufferData, alBuffer, utils::getAlAudioFormat(channel, bps), buffer.get(), size, sampleRate);
     } else {
         throw std::runtime_error("Unsupported audio format (" + extension + ")");
