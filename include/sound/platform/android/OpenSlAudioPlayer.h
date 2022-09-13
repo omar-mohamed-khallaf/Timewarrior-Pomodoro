@@ -28,7 +28,7 @@ private:
     SLObjectItf slOutputMixObj_{nullptr};
     SLObjectItf slAudioPlayerObj_{nullptr};
 #ifdef __ANDROID__
-    SLint32 androidStreamType{SL_ANDROID_STREAM_MEDIA};
+    SLint32 androidStreamType{SL_ANDROID_STREAM_NOTIFICATION};
 #endif
     std::unordered_map<std::string, SLPlayItf> audio_;
 };
