@@ -20,17 +20,17 @@ public:
 
         int getCharToLower();
 
-        int getLines() const;
+        [[nodiscard]] int getLines() const;
 
-        int getCols() const;
+        [[nodiscard]] int getCols() const;
 
-        void putLineAt(const std::string &string, int y, int x);
+        void putLineAt(const std::wstring &string, int y, int x);
 
-        void putLineFor(const std::string &string, int y, int x, std::chrono::seconds duration);
+        void putLineFor(const std::wstring &string, int y, int x, std::chrono::seconds duration);
 
-        void putLineWrapped(const std::string &string, int y, int x, int width);
+        void putLineWrapped(const std::wstring &string, int y, int x, int width);
 
-        char ask(const std::string &string, const std::string &validChars, unsigned int retries);
+        int ask(const std::wstring &string, const std::wstring &validChars, unsigned int retries);
 
         void clear();
 

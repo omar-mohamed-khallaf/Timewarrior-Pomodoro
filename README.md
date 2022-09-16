@@ -29,7 +29,7 @@ cmake --build build --parallel 4 --target install
 - [x] Add sounds after at the end of work and break sessions
 - [x] Parse output from child process
 - [x] Adapt to changes in terminal size
-- [ ] Support unicode
+- [x] Support unicode
 - [ ] Handle errors properly (is timew installed ?)
 - [ ] Make variables configurable
 - [ ] Confirm exit before exiting

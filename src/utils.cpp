@@ -3,10 +3,12 @@
 #include <unistd.h>
 #include <iostream>
 #include <sys/wait.h>
+#include <codecvt>
+#include <locale>
 
 #include "utils.h"
 
-std::string utils::executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false) {
+std::wstring utils::executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false) {
     int fields[2];  // 0: read fd, 1: write fd
     pipe(fields);
     char buf[256]{0};
@@ -29,8 +31,14 @@ std::string utils::executeProcess(const std::string &path, const std::vector<con
             if (output.empty()) throw std::runtime_error("Failed to run " + path);
             break;
     }
-    output.append(1, '\n');                             // make sure we have a line end
-    return output.substr(0, output.find('\n') + 1);     // get one line from output
+    output.append(1, '\n');                                             // make sure we have a line end
+    return utils::toWstring(output.substr(0, output.find('\n') + 1));   // get one line from output
+}
+
+std::wstring utils::toWstring(const std::string &string) {
+    typedef std::codecvt_utf8<wchar_t> convert_type;
+    std::wstring_convert<convert_type, wchar_t> converter;
+    return converter.from_bytes(string);
 }
 
 

@@ -1,5 +1,4 @@
 #include <future>
-#include <csignal>
 #include <iostream>
 
 #include "utils.h"
@@ -23,20 +22,20 @@ auto main() -> int {
         while (isRunning) {
             auto task{taskQueue.pop()};
             auto prevTime{std::chrono::steady_clock::now()};
-            std::string taskDescription;
+            std::wstring taskDescription;
             if (task.sessionType == PomodoroSessionType::WORK) {
                 try {
                     taskDescription = utils::executeProcess("/usr/bin/timew", {"continue", nullptr});
-
                 } catch (const std::runtime_error &error) {
-                    cmdScreen.putLineFor(error.what(), cmdScreen.getLines(), 0, std::chrono::seconds(1));
+                    cmdScreen.putLineFor(utils::toWstring(error.what()), cmdScreen.getLines(), 0,
+                                         std::chrono::seconds(1));
                     continue;
                 }
             }
             // timer
             while (task.duration.count() > 0 && isRunning && !isPause) {
                 // TODO: use ascii art to print digits adapted to the size of the terminal
-                cmdScreen.putLineAt("commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
+                cmdScreen.putLineAt(L"commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
                 tmrScreen.putLineAt(utils::formatSeconds<long, std::nano>(task.duration), 1,
                                     tmrScreen.getCols() / 2 - 5);
                 tmrScreen.putLineWrapped(taskDescription, tmrScreen.getLines() - 3,
@@ -54,7 +53,7 @@ auto main() -> int {
                 try {
                     utils::executeProcess("/usr/bin/timew", {"stop", nullptr});
                 } catch (const std::runtime_error &error) {
-                    cmdScreen.putLineFor(error.what(), cmdScreen.getLines(), 0, std::chrono::seconds(1));
+                    cmdScreen.putLineFor(utils::toWstring(error.what()), cmdScreen.getLines(), 0, std::chrono::seconds(1));
                 }
                 audioPlayer.play(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Retro_Synth.ogg");
             } else if (task.sessionType == PomodoroSessionType::FREE) {
@@ -66,7 +65,7 @@ auto main() -> int {
 
 
     int cmdChar;
-    cmdScreen.putLineAt("commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
+    cmdScreen.putLineAt(L"commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
     while ((cmdChar = cmdScreen.getCharToLower()) != 'e') {
         switch (cmdChar) {
             case 's':
@@ -75,7 +74,7 @@ auto main() -> int {
                     taskQueue.push({std::chrono::duration<long, std::ratio<60, 1>>(25), PomodoroSessionType::WORK});
                     taskQueue.push({std::chrono::duration<long, std::ratio<60, 1>>(5), PomodoroSessionType::FREE});
                 } else {
-                    cmdScreen.putLineFor("Timer is already running", cmdScreen.getLines(), 0, std::chrono::seconds(1));
+                    cmdScreen.putLineFor(L"Timer is already running", cmdScreen.getLines(), 0, std::chrono::seconds(1));
                 }
                 break;
             case 'p':
@@ -86,7 +85,7 @@ auto main() -> int {
                 getmaxyx(stdscr, lines, cols);
                 cmdScreen.resize(lines, cols);
                 tmrScreen.resize(lines - 2, cols - 2);
-                cmdScreen.putLineAt("commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
+                cmdScreen.putLineAt(L"commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
                 break;
             default:
                 break;
@@ -100,5 +99,3 @@ auto main() -> int {
 
     return 0;
 }
-
-#pragma clang diagnostic pop
