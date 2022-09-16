@@ -1,6 +1,5 @@
 # Pomodoro Timer for TimeWarrior
 
----
 ***
 Pomodoro timer is a timer interface executing `timew continue` and `timew stop`
 commands to mimic pomodoro sessions with
@@ -14,8 +13,8 @@ more information in their docs.
 
 ## Requirements
 - ncurses
-- OpenAL
-- OpenSLES (Only for android)
+- OpenAL (For desktop)
+- OpenSLES (For embedded devices)
 
 ## Installation
 ```bash
@@ -29,7 +28,8 @@ cmake --build build --parallel 4 --target install
 ## Task lists
 - [x] Add sounds after at the end of work and break sessions
 - [x] Parse output from child process
-- [ ] Adapt to changes in terminal size
+- [x] Adapt to changes in terminal size
+- [ ] Support unicode
 - [ ] Handle errors properly (is timew installed ?)
 - [ ] Make variables configurable
 - [ ] Confirm exit before exiting

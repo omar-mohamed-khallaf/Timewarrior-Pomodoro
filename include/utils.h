@@ -1,10 +1,12 @@
 #pragma once
 
-#include <ncurses.h>
 #include <queue>
 #include <condition_variable>
+
 #ifndef __ANDROID__
+
 #include <AL/al.h>
+
 #endif
 
 // TODO: make sessions' times configurable
@@ -23,43 +25,6 @@ public:
 };
 
 namespace utils {
-    class Ncurses {
-    public:
-        explicit Ncurses();
-
-        ~Ncurses();
-
-        class Screen {
-        public:
-            explicit Screen(WINDOW *window) noexcept(false);
-
-            Screen(int height, int width, int y, int x) noexcept(false);
-
-            ~Screen();
-
-            char getCharLower();
-
-            int getLines() const;
-
-            int getCols() const;
-
-            void putLineAt(const std::string &string, int y, int x);
-
-            void putLineFor(const std::string &string, int y, int x, std::chrono::seconds duration);
-
-            void putLineWrapped(const std::string &string, int y, int x, int width);
-
-            char ask(const std::string &string, const std::string &validChars, unsigned int retries);
-
-            void clearScreen();
-
-        private:
-            WINDOW *window_;
-            int lines_;         // number of lines -1 (to be used as index)
-            int cols_;          // number of columns - 1 (to be use ad index)
-        };
-    };
-
     template<typename T>
     class Queue {
     public:
@@ -79,7 +44,7 @@ namespace utils {
 
         T pop() {
             std::unique_lock lk(mutex_);
-            pendingData_.wait(lk, [this] { return this->queue_.size() > 0; });
+            pendingData_.wait(lk, [this] { return queue_.size() > 0; });
             T ref = queue_.front();
             queue_.pop();
             return ref;
@@ -141,6 +106,7 @@ namespace utils {
     };
 
 #ifndef __ANDROID__
+
     inline unsigned int getAlAudioFormat(unsigned int channel, unsigned int bps) {
         if (channel == 1) {
             if (bps == 8) {
@@ -156,5 +122,6 @@ namespace utils {
             }
         }
     }
+
 #endif
 }
