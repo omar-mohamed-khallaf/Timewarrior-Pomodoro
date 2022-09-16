@@ -8,6 +8,7 @@ Ncurses::Ncurses() {
     raw();
     noecho();
     curs_set(0);
+    setlocale(LC_ALL, "");
 }
 
 Ncurses::~Ncurses() {
@@ -28,15 +29,15 @@ auto Ncurses::Screen::getCharToLower() -> int {
     return std::tolower(wgetch(window_));
 }
 
-auto Ncurses::Screen::putLineAt(const std::string &string, int y, int x) -> void {
+auto Ncurses::Screen::putLineAt(const std::wstring &string, int y, int x) -> void {
     wmove(window_, y, 0);
     wclrtoeol(window_);
     wmove(window_, y, x);
-    waddstr(window_, string.c_str());
+    waddwstr(window_, string.c_str());
     wrefresh(window_);
 }
 
-auto Ncurses::Screen::putLineFor(const std::string &string, int y, int x, std::chrono::seconds duration) -> void {
+auto Ncurses::Screen::putLineFor(const std::wstring &string, int y, int x, std::chrono::seconds duration) -> void {
     putLineAt(string, y, x);
     wrefresh(window_);
     std::this_thread::sleep_for(duration);
@@ -45,7 +46,7 @@ auto Ncurses::Screen::putLineFor(const std::string &string, int y, int x, std::c
     wrefresh(window_);
 }
 
-auto Ncurses::Screen::putLineWrapped(const std::string &string, int y, int x, int width) -> void {
+auto Ncurses::Screen::putLineWrapped(const std::wstring &string, int y, int x, int width) -> void {
     auto strLen{string.length()};
     for (auto i = 0, l = 0; i < strLen; l++) {
         auto charWrappedLine = string.substr(i, width);
@@ -63,13 +64,13 @@ auto Ncurses::Screen::putLineWrapped(const std::string &string, int y, int x, in
 }
 
 
-auto Ncurses::Screen::ask(const std::string &string, const std::string &validChars, unsigned int retries) -> char {
-    char ans;
+auto Ncurses::Screen::ask(const std::wstring &string, const std::wstring &validChars, unsigned int retries) -> int {
+    int ans;
     while (retries--) {
         putLineAt(string, 0, 0);
         ans = getCharToLower();
-        if (validChars.find(ans) == std::string::npos) {
-            putLineFor(std::string(" is not a valid answer").insert(0, 1, ans), lines_ / 2, cols_ / 2 - 11,
+        if (validChars.find(ans) == std::wstring::npos) {
+            putLineFor(std::to_wstring(ans) + std::wstring(L" is not a valid answer"), lines_ / 2, cols_ / 2 - 11,
                        std::chrono::seconds(1));
             ans = '\0';
         }

@@ -62,7 +62,7 @@ namespace utils {
     };
 
     template<typename Rep, typename Period>
-    std::string formatSeconds(const std::chrono::duration<Rep, Period> &duration) {
+    std::wstring formatSeconds(const std::chrono::duration<Rep, Period> &duration) {
         auto seconds{std::chrono::duration_cast<std::chrono::seconds>(duration).count()};
         if (seconds < 0) throw std::invalid_argument("seconds can't be negative");
         std::tm time{};
@@ -71,12 +71,14 @@ namespace utils {
         time.tm_min = seconds % 60;
         seconds /= 60;
         time.tm_hour = seconds % 60;
-        char buf[64];
-        std::strftime(buf, sizeof(buf), "%H:%M:%S", &time);
+        wchar_t buf[64];
+        std::wcsftime(buf, sizeof(buf), L"%H:%M:%S", &time);
         return {buf};
     }
 
-    std::string executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false);
+    std::wstring executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false);
+
+    std::wstring toWstring(const std::string &string);
 
     class WavReader {
     public:
@@ -87,21 +89,21 @@ namespace utils {
     private:
         struct WavHeader {
             /* RIFF Chunk Descriptor */
-            uint8_t riff[4];
-            uint32_t chunkSize;
-            uint8_t waveHeader[4];
+            [[maybe_unused]] uint8_t riff[4];
+            [[maybe_unused]] uint32_t chunkSize;
+            [[maybe_unused]] uint8_t waveHeader[4];
             /* "fmt" sub-chunk */
-            uint8_t fmt[4];
-            uint32_t subChunk1Size;
-            uint16_t audioFormat;
-            uint16_t numOfChan;
-            uint32_t samplesPerSec;
-            uint32_t bytesPerSec;
-            uint16_t blockAlign;
-            uint16_t bitsPerSample;
+            [[maybe_unused]] uint8_t fmt[4];
+            [[maybe_unused]] uint32_t subChunk1Size;
+            [[maybe_unused]] uint16_t audioFormat;
+            [[maybe_unused]] uint16_t numOfChan;
+            [[maybe_unused]] uint32_t samplesPerSec;
+            [[maybe_unused]] uint32_t bytesPerSec;
+            [[maybe_unused]] uint16_t blockAlign;
+            [[maybe_unused]] uint16_t bitsPerSample;
             /* "data" sub-chunk */
-            uint8_t subChunk2ID[4];
-            uint32_t subChunk2Size;
+            [[maybe_unused]] uint8_t subChunk2ID[4];
+            [[maybe_unused]] uint32_t subChunk2Size;
         };
     };
 
