@@ -41,6 +41,12 @@ std::wstring utils::toWstring(const std::string &string) {
     return converter.from_bytes(string);
 }
 
+std::string utils::toString(const std::wstring &wstring) {
+    typedef std::codecvt_utf8<wchar_t> convert_type;
+    std::wstring_convert<convert_type, wchar_t> converter;
+    return converter.to_bytes(wstring);
+}
+
 
 std::unique_ptr<char>
 utils::WavReader::loadWAV(const std::string &audioFile, unsigned int &chan, unsigned int &sampleRate, unsigned int &bps,
