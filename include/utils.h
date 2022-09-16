@@ -80,6 +80,8 @@ namespace utils {
 
     std::wstring toWstring(const std::string &string);
 
+    std::string toString(const std::wstring &wstring);
+
     class WavReader {
     public:
         static std::unique_ptr<char>

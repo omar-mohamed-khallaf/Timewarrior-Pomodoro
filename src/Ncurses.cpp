@@ -1,14 +1,16 @@
 #include <thread>
+#include <locale>
 
 #include "Ncurses.h"
+#include "utils.h"
 
 
 Ncurses::Ncurses() {
+    setlocale(LC_ALL, "");
     initscr();
     raw();
     noecho();
     curs_set(0);
-    setlocale(LC_ALL, "");
 }
 
 Ncurses::~Ncurses() {
@@ -33,7 +35,11 @@ auto Ncurses::Screen::putLineAt(const std::wstring &string, int y, int x) -> voi
     wmove(window_, y, 0);
     wclrtoeol(window_);
     wmove(window_, y, x);
+#ifdef waddwstr
     waddwstr(window_, string.c_str());
+#else
+    waddstr(window_, utils::toString(string).c_str());
+#endif
     wrefresh(window_);
 }
 
