@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(tw-pomodoro VERSION "2.0.0")
+project(tw-pomodoro VERSION "2.1.0")
 
 configure_file(include/config.h.in config.h)
 set(CMAKE_CXX_STANDARD 20)
@@ -21,6 +21,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR})
 
 find_library(NCURSES ncurses REQUIRED)
+
 if (ANDROID)
     target_link_libraries(${PROJECT_NAME} ${NCURSES} -lOpenSLES)
 else ()

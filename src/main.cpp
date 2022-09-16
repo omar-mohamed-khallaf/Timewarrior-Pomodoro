@@ -1,15 +1,16 @@
-#include <iostream>
 #include <future>
-#include <iomanip>
+#include <csignal>
+#include <iostream>
 
 #include "utils.h"
 #include "config.h"
+#include "Ncurses.h"
 #include "sound/AudioPlayer.h"
 
 auto main() -> int {
-    utils::Ncurses ncurses;     // handle initialization of ncurses
-    utils::Ncurses::Screen cmdScreen(stdscr);
-    utils::Ncurses::Screen tmrScreen(LINES - 2, COLS - 2, 1, 1);
+    Ncurses ncurses;     // handle initialization of ncurses
+    Ncurses::Screen cmdScreen(stdscr);
+    Ncurses::Screen tmrScreen(LINES - 2, COLS - 2, 1, 1);
     AudioPlayer audioPlayer;
     utils::Queue<PomodoroSession<long, std::nano>> taskQueue;
     std::atomic<bool> isRunning = true;
@@ -22,12 +23,11 @@ auto main() -> int {
         while (isRunning) {
             auto task{taskQueue.pop()};
             auto prevTime{std::chrono::steady_clock::now()};
+            std::string taskDescription;
             if (task.sessionType == PomodoroSessionType::WORK) {
                 try {
-                    auto output = utils::executeProcess("/usr/bin/timew", {"continue", nullptr});
-                    tmrScreen.putLineWrapped(output, tmrScreen.getLines() - 3,
-                                             static_cast<int>(tmrScreen.getCols() / 2 - output.length() / 2),
-                                             tmrScreen.getCols() - 2);
+                    taskDescription = utils::executeProcess("/usr/bin/timew", {"continue", nullptr});
+
                 } catch (const std::runtime_error &error) {
                     cmdScreen.putLineFor(error.what(), cmdScreen.getLines(), 0, std::chrono::seconds(1));
                     continue;
@@ -36,8 +36,12 @@ auto main() -> int {
             // timer
             while (task.duration.count() > 0 && isRunning && !isPause) {
                 // TODO: use ascii art to print digits adapted to the size of the terminal
+                cmdScreen.putLineAt("commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
                 tmrScreen.putLineAt(utils::formatSeconds<long, std::nano>(task.duration), 1,
                                     tmrScreen.getCols() / 2 - 5);
+                tmrScreen.putLineWrapped(taskDescription, tmrScreen.getLines() - 3,
+                                         static_cast<int>(tmrScreen.getCols() / 2 - taskDescription.length() / 2),
+                                         tmrScreen.getCols() - 2);
                 auto sleepTime{std::chrono::seconds(1) - delta};            // desired sleep time
                 std::this_thread::sleep_for(std::chrono::duration<long, std::nano>(sleepTime));
                 auto curTime = std::chrono::steady_clock::now();
@@ -56,14 +60,14 @@ auto main() -> int {
             } else if (task.sessionType == PomodoroSessionType::FREE) {
                 audioPlayer.play(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Synth_Brass.ogg");
             }
-            tmrScreen.clearScreen();
+            tmrScreen.clear();
         }
     });
 
 
-    char cmdChar;
+    int cmdChar;
     cmdScreen.putLineAt("commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
-    while ((cmdChar = cmdScreen.getCharLower()) != 'e') {
+    while ((cmdChar = cmdScreen.getCharToLower()) != 'e') {
         switch (cmdChar) {
             case 's':
                 if (taskQueue.empty()) {
@@ -77,6 +81,13 @@ auto main() -> int {
             case 'p':
                 isPause = true;
                 break;
+            case KEY_RESIZE:
+                int lines, cols;
+                getmaxyx(stdscr, lines, cols);
+                cmdScreen.resize(lines, cols);
+                tmrScreen.resize(lines - 2, cols - 2);
+                cmdScreen.putLineAt("commands: (s)tart, (p)ause, (e)xit", 0, cmdScreen.getCols() / 2 - 17);
+                break;
             default:
                 break;
         }
@@ -89,3 +100,5 @@ auto main() -> int {
 
     return 0;
 }
+
+#pragma clang diagnostic pop
