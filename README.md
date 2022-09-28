@@ -13,6 +13,7 @@ more information in their docs.
 
 ## Requirements
 - ncurses
+- vorbis
 - OpenAL (For desktop)
 - OpenSLES (For embedded devices)
 
