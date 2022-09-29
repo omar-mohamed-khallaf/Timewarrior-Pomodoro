@@ -17,11 +17,16 @@ enum PomodoroSessionType {
     FREE = 1, WORK
 };
 
+enum PomodoroCommandType {
+    CONTINUE = 1, QUERY
+};
+
 template<typename Rep, typename Period>
 struct PomodoroSession {
 public:
     std::chrono::duration<Rep, Period> duration;
     PomodoroSessionType sessionType;
+    PomodoroCommandType commandType;
 };
 
 namespace utils {

@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+import signal
+import sys
+import json
+import psutil
+import signal
+
+try:
+    input_stream = sys.stdin.buffer
+except AttributeError:
+    input_stream = sys.stdin
+
+# Make no changes to the task, simply observe.
+old = json.loads(input_stream.readline().decode("utf-8", errors="replace"))
+new = json.loads(input_stream.readline().decode("utf-8", errors="replace"))
+print(json.dumps(new))
+
+if "start" in new and "start" not in old:
+    for process in psutil.process_iter(["pid", "name"]):
+        if process.name() == "tw-pomodoro":
+            process.send_signal(signal.SIGUSR1)

@@ -21,7 +21,7 @@ more information in their docs.
 ```bash
 git clone https://github.com/OmarMohamedKhallaf/Timewarrior-Pomodoro.git pomo
 cd pomo
-# Use -DCMAKE_INSTALL_PREFIX=$PREFIX/usr for termux on android
+# Use -DCMAKE_INSTALL_PREFIX=$PREFIX for termux on android
 cmake -B build -S ./ -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 4 --target install
 ```
@@ -31,11 +31,12 @@ cmake --build build --parallel 4 --target install
 - [x] Parse output from child process
 - [x] Adapt to changes in terminal size
 - [x] Support unicode
+- [x] Automatic session tracking by handling signals (e.g. from taskwarrior hook scripts)
 - [ ] Handle errors properly (is timew installed ?)
+- [ ] Handle text wrapping properly (automatically calculate starting line to ensure full text is displayed)
 - [ ] Make variables configurable
 - [ ] Confirm exit before exiting
 - [ ] Support for `timew start <tags...>` in the interface
-- [ ] Automatic session tracking by handling signals (e.g. from taskwarrior hook scripts)
 - [ ] Use ascii art to print digits adapted to the size of the terminal
 
 ## Usage
