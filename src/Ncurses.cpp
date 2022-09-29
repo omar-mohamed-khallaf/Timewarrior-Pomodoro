@@ -3,6 +3,9 @@
 
 #include "Ncurses.h"
 
+#ifndef waddwstr
+#include "utils.h"
+#endif
 
 Ncurses::Ncurses() {
     setlocale(LC_ALL, "");

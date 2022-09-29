@@ -59,7 +59,7 @@ order.
 
 For example:
 
-```bash
+```text
 $ ls -1 ~/.task/hooks/
 on-modify.00-timewarrior
 on-modify.99-tw-pomodoro
