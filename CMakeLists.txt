@@ -32,6 +32,9 @@ else ()
 
 endif ()
 
+install(PROGRAMS extras/scripts/on-modify.99-tw-pomodoro
+        DESTINATION $ENV{HOME}/.task/hooks/)
+
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION bin
         CONFIGURATIONS Release)
