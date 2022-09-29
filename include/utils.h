@@ -13,15 +13,20 @@
 constexpr unsigned int SESSION_TIME_SECS = 25 * 60;
 constexpr unsigned int BREAK_TIME_SECS = 5 * 60;
 
-enum PomodoroSessionType {
+enum SessionType {
     FREE = 1, WORK
+};
+
+enum CommandType {
+    CONTINUE = 1, QUERY
 };
 
 template<typename Rep, typename Period>
 struct PomodoroSession {
 public:
     std::chrono::duration<Rep, Period> duration;
-    PomodoroSessionType sessionType;
+    SessionType sessionType;
+    CommandType commandType;
 };
 
 namespace utils {
@@ -35,10 +40,10 @@ namespace utils {
         Queue(Queue &&) = delete;
 
         void push(T x) {
-            std::unique_lock lk(mutex_);
-            queue_.push(x);
-            // Manual unlocking is done before notifying, to avoid waking up the waiting thread only to block again
-            lk.unlock();
+            {
+                std::lock_guard lk(mutex_);
+                queue_.push(x);
+            }// Manual unlocking is done before notifying, to avoid waking up the waiting thread only to block again
             pendingData_.notify_one();
         };
 
