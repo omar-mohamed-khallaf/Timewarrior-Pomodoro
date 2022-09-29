@@ -12,12 +12,15 @@ script that integrates it with
 more information in their docs.
 
 ## Requirements
+
 - ncurses
-- vorbis
+- psutil (`sudo pip install psutil` for the hook script)
+- vorbis (For desktop)
 - OpenAL (For desktop)
 - OpenSLES (For embedded devices)
 
 ## Installation
+
 ```bash
 git clone https://github.com/OmarMohamedKhallaf/Timewarrior-Pomodoro.git pomo
 cd pomo
@@ -27,6 +30,7 @@ cmake --build build --parallel 4 --target install
 ```
 
 ## Task lists
+
 - [x] Add sounds after at the end of work and break sessions
 - [x] Parse output from child process
 - [x] Adapt to changes in terminal size
@@ -40,15 +44,37 @@ cmake --build build --parallel 4 --target install
 - [ ] Use ascii art to print digits adapted to the size of the terminal
 
 ## Usage
+
 There are only three commands for now
+
 ```text
 s: to start a session followed by a break
 p: to pause the current session (actually stops it in timewarrior terms)
 e: to exit
 ```
 
+There is a hook scrip that automatically starts tracking by sending a USR1 signal to the program.
+This scrip must be executed after timewarrior hook script, to enforce this ordering they must be named in lexicological
+order.
+
+For example:
+
+```bash
+$ ls -1 ~/.task/hooks/                                                                       │
+on-modify.00-timewarrior                                                                                            │
+on-modify.99-tw-pomodoro
+```
+
+So a normal workflow is like this:
+- you have your tasks stored in taskwarrior
+- you have tw-pomodoro opened in another window, pane, ...
+- you `task 1 start` and tw-pomodoro automatically starts the timer and notifies you at the end of sessions
+- after a break you press `s` and start your next session
+
 ## Contributing
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 ## License
+
 [GNU General Public License v3.0](https://choosealicense.com/licenses/gpl-3.0/)
