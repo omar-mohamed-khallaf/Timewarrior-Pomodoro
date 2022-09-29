@@ -16,6 +16,6 @@ new = json.loads(input_stream.readline().decode("utf-8", errors="replace"))
 print(json.dumps(new))
 
 if "start" in new and "start" not in old:
-    for process in psutil.process_iter(["pid", "name"]):
+    for process in psutil.process_iter(["name"]):
         if process.name() == "tw-pomodoro":
             process.send_signal(signal.SIGUSR1)

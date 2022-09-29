@@ -60,8 +60,8 @@ order.
 For example:
 
 ```bash
-$ ls -1 ~/.task/hooks/                                                                       │
-on-modify.00-timewarrior                                                                                            │
+$ ls -1 ~/.task/hooks/
+on-modify.00-timewarrior
 on-modify.99-tw-pomodoro
 ```
 

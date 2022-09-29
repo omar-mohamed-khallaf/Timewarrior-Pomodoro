@@ -2,7 +2,6 @@
 #include <locale>
 
 #include "Ncurses.h"
-#include "utils.h"
 
 
 Ncurses::Ncurses() {
