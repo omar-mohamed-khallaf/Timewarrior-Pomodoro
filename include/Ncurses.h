@@ -114,7 +114,6 @@ public:
          */
         void putCentered(const std::wstring &string, int y, int width);
 
-
         /**
          * Puts a line for a specific duration centered at y coordinate on a screen if the line fits in the specified
          * width, otherwise the line is wrapped such that the last word will be on the line at y index

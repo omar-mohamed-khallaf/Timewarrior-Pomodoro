@@ -46,7 +46,7 @@ auto main() -> int {
                     else if (task.commandType == CommandType::QUERY)
                         taskDescription = utils::executeProcess("/usr/bin/timew", {nullptr});
                 } catch (const std::runtime_error &error) {
-                    cmdScreen.putFor(error.what(), cmdScreen.getLines(), 0, std::chrono::seconds(1));
+                    cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(1));
                     continue;
                 }
             }
@@ -54,9 +54,8 @@ auto main() -> int {
             while (isRunning.load(std::memory_order_relaxed) && !isPause.load(std::memory_order_relaxed) &&
                    task.duration.count() > 0) {
                 // TODO: use ascii art to print digits adapted to the size of the terminal
-                PUT_CENTERED(cmdScreen, "commands: (s)tart, (p)ause, (e)xit", 0);
                 tmrScreen.putCentered(utils::formatSeconds<long, std::nano>(task.duration), 1, 8);
-                tmrScreen.putCentered(taskDescription, tmrScreen.getLines() - 1, tmrScreen.getCols() - 10);
+                tmrScreen.putCentered(taskDescription, tmrScreen.getLines() - 1, tmrScreen.getCols() - 11);
                 auto sleepTime{std::chrono::seconds(1) - delta};            // desired sleep time
                 std::this_thread::sleep_for(std::chrono::duration<long, std::nano>(sleepTime));
                 auto curTime = std::chrono::steady_clock::now();
@@ -70,7 +69,7 @@ auto main() -> int {
                 try {
                     utils::executeProcess("/usr/bin/timew", {"stop", nullptr});
                 } catch (const std::runtime_error &error) {
-                    cmdScreen.putFor(error.what(), cmdScreen.getLines(), 0, std::chrono::seconds(1));
+                    cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(1));
                 }
                 audioPlayer.play(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Retro_Synth.ogg");
             } else if (task.sessionType == SessionType::FREE) {
