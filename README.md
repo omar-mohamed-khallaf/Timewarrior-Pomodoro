@@ -34,7 +34,7 @@ cmake --build build --parallel 4 --target install
 - [x] Parse output from child process
 - [x] Adapt to changes in terminal size
 - [x] Support unicode
-- [x] Automatic session tracking by handling signals (e.g. from taskwarrior hook scripts)
+- [x] Automatic session tracking by handling signals from taskwarrior hook scripts (Doesn't work for android )
 - [x] Handle text wrapping properly (automatically calculate starting line to ensure full text is displayed)
 - [ ] Handle errors properly (is timew installed ?)
 - [ ] Make variables configurable

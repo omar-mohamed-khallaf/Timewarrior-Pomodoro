@@ -32,9 +32,11 @@ else ()
 
 endif ()
 
+if (NOT ANDROID)
 install(PROGRAMS extras/scripts/on-modify.99-tw-pomodoro
         DESTINATION $ENV{HOME}/.task/hooks/
         PERMISSIONS OWNER_READ OWNER_EXECUTE)
+endif()
 
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION bin
