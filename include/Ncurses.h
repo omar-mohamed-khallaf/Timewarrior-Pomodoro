@@ -18,22 +18,141 @@ public:
 
         ~Screen();
 
+        /**
+         * Get the char pressed on keyboard always in lower case
+         * @return the char pressed
+         */
         int getCharToLower();
 
+        /**
+         * Get the number of lines of this screen
+         * @return the number of lines
+         */
         [[nodiscard]] int getLines() const;
 
+        /**
+         * Get the number of columns of this screen
+         * @return the number of columns
+         */
         [[nodiscard]] int getCols() const;
 
-        void putLineAt(const std::wstring &string, int y, int x);
+        /**
+         * Puts a line at y, x coordinates on a screen
+         * @note if string can't fit on the line it's trimmed
+         * @param string the string to be printed
+         * @param y the line index
+         * @param x the column index
+         */
+        void putAt(const std::string &string, int y, int x);
 
-        void putLineFor(const std::wstring &string, int y, int x, std::chrono::seconds duration);
+        /**
+         * Puts a line at y, x coordinates on a screen
+         * @note if string can't fit on the line it's trimmed
+         * @param string the string to be printed
+         * @param y the line index
+         * @param x the column index
+         */
+        void putAt(const std::wstring &string, int y, int x);
 
-        void putLineWrapped(const std::wstring &string, int y, int x, int width);
+        /**
+         * Puts a line at y, x coordinates on a screen for a specific duration of time
+         * @note suspends the thread that calls the function
+         * @note if string can't fit on the line it's trimmed
+         * @param string the string to be printed
+         * @param y the line index
+         * @param x the colum index
+         * @param duration the duration of display
+         */
+        void putFor(const std::string &string, int y, int x, std::chrono::seconds duration);
 
+        /**
+         * Puts a line at y, x coordinates on a screen for a specific duration of time
+         * @note suspends the thread that calls the function
+         * @note if string can't fit on the line it's trimmed
+         * @param string to be printed
+         * @param y the line index
+         * @param x the colum index
+         * @param duration the duration of display
+         */
+        void putFor(const std::wstring &string, int y, int x, std::chrono::seconds duration);
+
+        /**
+         * Puts a line at y, x coordinates on a screen if the line fits in the specified width, otherwise the line is
+         * wrapped such that the last word will be on the line at y index
+         * @param string the string to be printed
+         * @param y the line index
+         * @param x the column index
+         * @param width the maximum width to wrap after
+         */
+        void putWrapped(const std::string &string, int y, int x, int width);
+
+        /**
+         * Puts a line at y, x coordinates on a screen if the line fits in the specified width, otherwise the line is
+         * wrapped such that the last word will be on the line at y index
+         * @param string the string to be printed
+         * @param y the line index
+         * @param x the column index
+         * @param width the maximum width to wrap after
+         */
+        void putWrapped(const std::wstring &string, int y, int x, int width);
+
+        /**
+         * Puts a line centered at y coordinate on a screen if the line fits in the specified width, otherwise the line
+         * is wrapped such that the last word will be on the line at y index
+         * @param string the string to be printed
+         * @param y the line index
+         * @param width the maximum width to wrap after
+         */
+        void putCentered(const std::string &string, int y, int width);
+
+        /**
+         * Puts a line centered at y coordinate on a screen if the line fits in the specified width, otherwise the line
+         * is wrapped such that the last word will be on the line at y index
+         * @param string the string to be printed
+         * @param y the line index
+         * @param width the maximum width to wrap after
+         */
+        void putCentered(const std::wstring &string, int y, int width);
+
+        /**
+         * Puts a line for a specific duration centered at y coordinate on a screen if the line fits in the specified
+         * width, otherwise the line is wrapped such that the last word will be on the line at y index
+         * @param string the string to be printed
+         * @param y the line index
+         * @param width the maximum width to wrap after
+         * @param duration the duration of display
+         */
+        void putCenteredFor(const std::string &string, int y, int width, std::chrono::seconds duration);
+
+        /**
+         * Puts a line for a specific duration centered at y coordinate on a screen if the line fits in the specified
+         * width, otherwise the line is wrapped such that the last word will be on the line at y index
+         * @param string the string to be printed
+         * @param y the line index
+         * @param width the maximum width to wrap after
+         * @param duration the duration of display
+         */
+        void putCenteredFor(const std::wstring &string, int y, int width, std::chrono::seconds duration);
+
+        /**
+         * Ask the user a question and get the pressed key back
+         * @param string question to show the user
+         * @param validChars allowed key presses as responses
+         * @param retries number of retries if invalid key is pressed
+         * @return the pressed key as an answer
+         */
         int ask(const std::wstring &string, const std::wstring &validChars, unsigned int retries);
 
+        /**
+         * Clears the screen
+         */
         void clear();
 
+        /**
+         * Updates the screen to use the new number of lines and cols
+         * @param lines the number of lines
+         * @param cols the number of columns
+         */
         void resize(int lines, int cols);
 
     private:

@@ -14,7 +14,6 @@ more information in their docs.
 ## Requirements
 
 - ncurses
-- psutil (`sudo pip install psutil` for the hook script)
 - vorbis (For desktop)
 - OpenAL (For desktop)
 - OpenSLES (For embedded devices)
@@ -29,15 +28,15 @@ cmake -B build -S ./ -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Releas
 cmake --build build --parallel 4 --target install
 ```
 
-## Task lists
+## Tasks list
 
 - [x] Add sounds after at the end of work and break sessions
 - [x] Parse output from child process
 - [x] Adapt to changes in terminal size
 - [x] Support unicode
-- [x] Automatic session tracking by handling signals (e.g. from taskwarrior hook scripts)
+- [x] Automatic session tracking by handling signals from taskwarrior hook scripts (Doesn't work for android )
+- [x] Handle text wrapping properly (automatically calculate starting line to ensure full text is displayed)
 - [ ] Handle errors properly (is timew installed ?)
-- [ ] Handle text wrapping properly (automatically calculate starting line to ensure full text is displayed)
 - [ ] Make variables configurable
 - [ ] Confirm exit before exiting
 - [ ] Support for `timew start <tags...>` in the interface
@@ -54,8 +53,8 @@ e: to exit
 ```
 
 There is a hook scrip that automatically starts tracking by sending a USR1 signal to the program.
-This scrip must be executed after timewarrior hook script, to enforce this ordering they must be named in lexicological
-order.
+This scrip must be executed after timewarrior hook script, to enforce this ordering they must be named in a
+lexicological order.
 
 For example:
 
@@ -66,6 +65,7 @@ on-modify.99-tw-pomodoro
 ```
 
 So a normal workflow is like this:
+
 - you have your tasks stored in taskwarrior
 - you have tw-pomodoro opened in another window, pane, ...
 - you `task 1 start` and tw-pomodoro automatically starts the timer and notifies you at the end of sessions
