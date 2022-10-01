@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-import signal
 import sys
 import json
-import psutil
-import signal
+import subprocess
 
 try:
     input_stream = sys.stdin.buffer
@@ -16,6 +14,8 @@ new = json.loads(input_stream.readline().decode("utf-8", errors="replace"))
 print(json.dumps(new))
 
 if "start" in new and "start" not in old:
-    for process in psutil.process_iter(["name"]):
-        if process.name() == "tw-pomodoro":
-            process.send_signal(signal.SIGUSR1)
+    try:
+        pid = subprocess.check_output(["pidof", "tw-pomodoro"])
+        subprocess.Popen(["kill", "-USR1", pid.replace(b'"', b'').replace(b'\n', b'')])
+    except subprocess.CalledProcessError as e:
+        print(e)

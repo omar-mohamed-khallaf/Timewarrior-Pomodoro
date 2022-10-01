@@ -9,6 +9,9 @@
 
 #endif
 
+#define PUT_CENTERED(screen, string, line) screen.putCentered(string, line, sizeof(string))
+#define PUT_CENTERED_FOR(screen, string, line, duration) screen.putCenteredFor(string, line, sizeof(string), duration)
+
 // TODO: make sessions' times configurable
 constexpr unsigned int SESSION_TIME_SECS = 25 * 60;
 constexpr unsigned int BREAK_TIME_SECS = 5 * 60;

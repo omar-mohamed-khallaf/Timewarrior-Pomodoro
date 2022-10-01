@@ -1,5 +1,8 @@
 #include <thread>
 #include <locale>
+#include <vector>
+
+#include <algorithm>
 
 #include "Ncurses.h"
 
@@ -25,15 +28,29 @@ Ncurses::Screen::Screen(int height, int width, int y, int x) : lines_(height), c
     keypad(window_, true);
 }
 
+Ncurses::Screen::Screen(WINDOW *window) : lines_(LINES - 1), cols_(COLS - 1) {
+    window_ = window;
+    keypad(window_, true);
+}
+
 Ncurses::Screen::~Screen() {
     delwin(window_);
 }
 
-auto Ncurses::Screen::getCharToLower() -> int {
+int Ncurses::Screen::getCharToLower() {
     return std::tolower(wgetch(window_));
 }
 
-auto Ncurses::Screen::putLineAt(const std::wstring &string, int y, int x) -> void {
+void Ncurses::Screen::putAt(const std::string &string, int y, int x) {
+    wmove(window_, y, 0);
+    wclrtoeol(window_);
+    wmove(window_, y, x);
+    waddstr(window_, string.c_str());
+    wrefresh(window_);
+}
+
+
+void Ncurses::Screen::putAt(const std::wstring &string, int y, int x) {
     wmove(window_, y, 0);
     wclrtoeol(window_);
     wmove(window_, y, x);
@@ -45,8 +62,8 @@ auto Ncurses::Screen::putLineAt(const std::wstring &string, int y, int x) -> voi
     wrefresh(window_);
 }
 
-auto Ncurses::Screen::putLineFor(const std::wstring &string, int y, int x, std::chrono::seconds duration) -> void {
-    putLineAt(string, y, x);
+void Ncurses::Screen::putFor(const std::string &string, int y, int x, std::chrono::seconds duration) {
+    putAt(string, y, x);
     wrefresh(window_);
     std::this_thread::sleep_for(duration);
     wmove(window_, y, x);
@@ -54,54 +71,161 @@ auto Ncurses::Screen::putLineFor(const std::wstring &string, int y, int x, std::
     wrefresh(window_);
 }
 
-auto Ncurses::Screen::putLineWrapped(const std::wstring &string, int y, int x, int width) -> void {
+void Ncurses::Screen::putFor(const std::wstring &string, int y, int x, std::chrono::seconds duration) {
+    putAt(string, y, x);
+    wrefresh(window_);
+    std::this_thread::sleep_for(duration);
+    wmove(window_, y, x);
+    wclrtoeol(window_);
+    wrefresh(window_);
+}
+
+static std::vector<std::string> getWrappedLines(const std::string &string, int width) {
+    std::vector<std::string> lines;
     auto strLen{string.length()};
-    for (auto i = 0, l = 0; i < strLen; l++) {
+
+    for (auto i = 0; i < strLen;) {
         auto charWrappedLine = string.substr(i, width);
         auto lastCharIdx{charWrappedLine.length() - 1};
-        if (charWrappedLine[lastCharIdx] != '\n' && charWrappedLine[lastCharIdx] != ' ') {
+
+        // if still other chars in the string and the last char in the substring not '\n' or ' '
+        if (i + width < strLen && charWrappedLine[lastCharIdx] != '\n' && charWrappedLine[lastCharIdx] != ' ') {
             auto lastSpace{charWrappedLine.find_last_of(' ')};
             auto wordWrappedLine = charWrappedLine.substr(0, lastSpace);
             i += static_cast<int>(wordWrappedLine.size());
-            putLineAt(wordWrappedLine, y + l, x);
+            lines.push_back(std::move(wordWrappedLine));
         } else {
             i += width;
-            putLineAt(charWrappedLine, y + l, x);
+            lines.push_back(std::move(charWrappedLine));
         }
+    }
+
+    return lines;
+}
+
+static std::vector<std::wstring> getWrappedLines(const std::wstring &string, int width) {
+    std::vector<std::wstring> lines;
+    auto strLen{string.length()};
+
+    for (auto i = 0; i < strLen;) {
+        auto charWrappedLine = string.substr(i, width);
+        auto lastCharIdx{charWrappedLine.length() - 1};
+
+        // if still other chars in the string and the last char in the substring not '\n' or ' '
+        if (i + width < strLen && charWrappedLine[lastCharIdx] != '\n' && charWrappedLine[lastCharIdx] != ' ') {
+            auto lastSpace{charWrappedLine.find_last_of(' ')};
+            auto wordWrappedLine = charWrappedLine.substr(0, lastSpace);
+            i += static_cast<int>(wordWrappedLine.size());
+            lines.push_back(std::move(wordWrappedLine));
+        } else {
+            i += width;
+            lines.push_back(std::move(charWrappedLine));
+        }
+    }
+
+    return lines;
+}
+
+void Ncurses::Screen::putWrapped(const std::string &string, int y, int x, int width) {
+    auto lines{getWrappedLines(string, width)};
+    y -= static_cast<int>(lines.size());
+
+    for (auto const &line: lines) {
+        putAt(line, ++y, x);
+    }
+
+}
+
+void Ncurses::Screen::putWrapped(const std::wstring &string, int y, int x, int width) {
+    auto lines{getWrappedLines(string, width)};
+    y -= static_cast<int>(lines.size());
+
+    for (auto const &line: lines) {
+        putAt(line, ++y, x);
     }
 }
 
+void Ncurses::Screen::putCentered(const std::string &string, int y, int width) {
+    auto lines{getWrappedLines(string, width)};
+    y -= static_cast<int>(lines.size());
 
-auto Ncurses::Screen::ask(const std::wstring &string, const std::wstring &validChars, unsigned int retries) -> int {
+    for (auto const &line: lines) {
+        auto x{cols_ / 2 - static_cast<int>(line.size() / 2)};
+        putAt(line, ++y, x);
+    }
+}
+
+void Ncurses::Screen::putCentered(const std::wstring &string, int y, int width) {
+    auto lines{getWrappedLines(string, width)};
+    y -= static_cast<int>(lines.size());
+
+    for (auto const &line: lines) {
+        auto x{cols_ / 2 - static_cast<int>(line.size() / 2)};
+        putAt(line, ++y, x);
+    }
+}
+
+void
+Ncurses::Screen::putCenteredFor(const std::string &string, int y, int width, std::chrono::seconds duration) {
+    auto lines{getWrappedLines(string, width)};
+    y -= static_cast<int>(lines.size());
+
+    for (auto const &line: lines) {
+        auto x{cols_ / 2 - static_cast<int>(line.size() / 2)};
+        putAt(line, ++y, x);
+    }
+    std::this_thread::sleep_for(duration);
+    for (auto i{y - static_cast<int>(lines.size()) + 1}; i < y; ++i) {
+        wmove(window_, i, 0);
+        wclrtoeol(window_);
+    }
+    wrefresh(window_);
+}
+
+void Ncurses::Screen::putCenteredFor(const std::wstring &string, int y, int width,
+                                     std::chrono::seconds duration) {
+    auto lines{getWrappedLines(string, width)};
+    y -= static_cast<int>(lines.size());
+
+    for (auto const &line: lines) {
+        auto x{cols_ / 2 - static_cast<int>(line.size() / 2)};
+        putAt(line, ++y, x);
+    }
+    std::this_thread::sleep_for(duration);
+    for (auto i{y - static_cast<int>(lines.size()) + 1}; i < y; ++i) {
+        wmove(window_, i, 0);
+        wclrtoeol(window_);
+    }
+    wrefresh(window_);
+}
+
+int Ncurses::Screen::ask(const std::wstring &string, const std::wstring &validChars, unsigned int retries) {
     int ans;
     while (retries--) {
-        putLineAt(string, 0, 0);
+        putAt(string, 0, 0);
         ans = getCharToLower();
         if (validChars.find(ans) == std::wstring::npos) {
-            putLineFor(std::to_wstring(ans) + std::wstring(L" is not a valid answer"), lines_ / 2, cols_ / 2 - 11,
-                       std::chrono::seconds(1));
+            putFor(std::to_wstring(ans) + std::wstring(L" is not a valid answer"), lines_ / 2, cols_ / 2 - 11,
+                   std::chrono::seconds(1));
             ans = '\0';
         }
     }
     return ans;
 }
 
-auto Ncurses::Screen::clear() -> void {
+void Ncurses::Screen::clear() {
     wclear(window_);
+    wrefresh(window_);
 }
 
-auto Ncurses::Screen::getLines() const -> int {
+int Ncurses::Screen::getLines() const {
     return lines_;
 }
 
-auto Ncurses::Screen::getCols() const -> int {
+int Ncurses::Screen::getCols() const {
     return cols_;
 }
 
-Ncurses::Screen::Screen(WINDOW *window) : lines_(LINES - 1), cols_(COLS - 1) {
-    window_ = window;
-    keypad(window_, true);
-}
 
 void Ncurses::Screen::resize(int lines, int cols) {
     lines_ = lines;
