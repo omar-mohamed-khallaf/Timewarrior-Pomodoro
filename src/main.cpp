@@ -15,7 +15,7 @@ static std::atomic<bool> isPause = true;
 
 static auto usr1SigHandler(int) {
     if (isPause.load(std::memory_order::relaxed))
-        taskQueue.emplace(std::chrono::minutes(25), std::chrono::minutes(5), utils::TimewCommand::QUERY);
+        taskQueue.push({std::chrono::minutes(25), std::chrono::minutes(5), utils::TimewCommand::QUERY});
 }
 
 template<typename Rep, typename Period>
@@ -95,7 +95,7 @@ auto main() -> int {
         switch (cmdChar) {
             case 's':
                 if (isPause.load(std::memory_order::relaxed)) {
-                    taskQueue.emplace(std::chrono::minutes(25), std::chrono::minutes(5), utils::TimewCommand::CONTINUE);
+                    taskQueue.push({std::chrono::minutes(25), std::chrono::minutes(5), utils::TimewCommand::CONTINUE});
                 } else {
                     cmdScreen.putFor("Timer is already running", cmdScreen.getLines() - 1, 0, std::chrono::seconds(1));
                 }

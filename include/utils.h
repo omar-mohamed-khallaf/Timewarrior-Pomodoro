@@ -105,15 +105,6 @@ namespace utils {
                 cv_.notify_one();
             }
 
-            template<typename ...Args>
-            auto emplace(Args &&...args) {
-                std::unique_lock lk(m_);
-                auto res = c_.emplace_back(std::forward<Args>(args)...);
-                lk.unlock();
-                cv_.notify_one();
-                return res;
-            }
-
             reference wait_pop() {
                 std::unique_lock lk(m_);
                 cv_.wait(lk, [&] { return !c_.empty(); });
