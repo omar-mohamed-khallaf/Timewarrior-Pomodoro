@@ -39,7 +39,7 @@ static auto countDown(const Ncurses::Screen &tmrScreen, const Ncurses::Screen &c
         prevTime = curTime;
     }
 
-    return duration.count() == 0;
+    return duration.count() <= 0;
 }
 
 auto main() -> int {
