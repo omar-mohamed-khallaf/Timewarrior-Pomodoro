@@ -57,7 +57,7 @@ void Ncurses::Screen::putAt(const std::wstring &string, int y, int x) const {
 #ifdef waddwstr
     waddwstr(window_, string.c_str());
 #else
-    waddstr(window_, utils::toString(string).c_str());
+    waddstr(window_, utils::utfToString(string).c_str());
 #endif
     wrefresh(window_);
 }
