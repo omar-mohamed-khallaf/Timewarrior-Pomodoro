@@ -103,6 +103,11 @@ auto main() -> int {
                 break;
             case 'p':
                 isPause.store(true, std::memory_order_relaxed);
+                try {
+                    utils::executeProcess("/usr/bin/timew", {"stop", nullptr});
+                } catch (const std::runtime_error &error) {
+                    cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(1));
+                }
                 break;
             case KEY_RESIZE:
                 int lines, cols;
