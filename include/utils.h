@@ -1,95 +1,176 @@
 #pragma once
 
-#include <queue>
+#include <deque>
+#include <vector>
+#include <mutex>
 #include <condition_variable>
 
 #ifndef __ANDROID__
 
 #include <AL/al.h>
+#include <cassert>
 
 #endif
 
-#define PUT_CENTERED(screen, string, line) screen.putCentered(string, line, sizeof(string))
-#define PUT_CENTERED_FOR(screen, string, line, duration) screen.putCenteredFor(string, line, sizeof(string), duration)
-
-// TODO: make sessions' times configurable
-constexpr unsigned int SESSION_TIME_SECS = 25 * 60;
-constexpr unsigned int BREAK_TIME_SECS = 5 * 60;
-
-enum SessionType {
-    FREE = 1, WORK
-};
-
-enum CommandType {
-    CONTINUE = 1, QUERY
-};
-
-template<typename Rep, typename Period>
-struct PomodoroSession {
-public:
-    std::chrono::duration<Rep, Period> duration;
-    SessionType sessionType;
-    CommandType commandType;
-};
-
 namespace utils {
-    template<typename T>
-    class Queue {
-    public:
-        Queue() = default;
+    namespace concurrent {
+        /**
+         * A threadsafe queue inspired from the STL
+         * @tparam Tp Type of element.
+         * @tparam Sequence Type of underlying sequence, defaults to deque_Tp>
+         * @tparam Mutex Type of mutex used to synchronize operations
+         */
+        template<typename Tp, typename Sequence = std::deque<Tp>, typename Mutex = std::mutex>
+        class queue {
+            template<typename Tp1, typename Seq1>
+            friend bool operator==(const queue<Tp1, Seq1> &, const queue<Tp1, Seq1> &);
 
-        Queue(const Queue &) = delete;
+            template<typename Tp1, typename Seq1>
+            friend bool operator<(const queue<Tp1, Seq1> &, const queue<Tp1, Seq1> &);
 
-        Queue(Queue &&) = delete;
+#ifdef __cpp_lib_three_way_comparison
 
-        void push(T x) {
-            {
-                std::lock_guard lk(mutex_);
-                queue_.push(x);
-            }// Manual unlocking is done before notifying, to avoid waking up the waiting thread only to block again
-            pendingData_.notify_one();
+            template<typename Tp1, std::three_way_comparable Seq1>
+            friend std::compare_three_way_result_t<Seq1>
+            operator<=>(const queue<Tp1, Seq1> &, const queue<Tp1, Seq1> &);
+
+#endif
+            template<typename Alloc> using Uses = typename std::enable_if<std::uses_allocator<Sequence, Alloc>::value>::type;
+
+
+            static_assert(std::is_same<Tp, typename Sequence::value_type>::value,
+                          "value_type must be the same as the underlying container");
+
+        public:
+            typedef typename Sequence::value_type value_type;
+            typedef typename Sequence::reference reference;
+            typedef typename Sequence::const_reference const_reference;
+            typedef typename Sequence::size_type size_type;
+            typedef Sequence container_type;
+
+        private:
+            Sequence c_;
+            mutable Mutex m_;
+            std::condition_variable cv_;
+
+        public:
+            template<typename Seq = Sequence, typename = typename std::enable_if<std::is_default_constructible<Seq>::value>::type>
+            queue() : c_() {}
+
+            explicit queue(const Sequence &_c) : c_(_c) {}
+
+            explicit queue(Sequence &&_c) : c_(std::move(_c)) {}
+
+            template<typename Alloc, typename = Uses<Alloc>>
+            explicit queue(const Alloc &_a) : c_(_a) {}
+
+            template<typename Alloc, typename = Uses<Alloc>>
+            queue(Sequence &&_c, const Alloc &_a) : c_(std::move(_c), _a) {}
+
+            template<typename Alloc, typename = Uses<Alloc>>
+            queue(const queue &_q, const Alloc &_a) {
+                std::scoped_lock(m_, _q.m_);
+                c_(_q.c_, _a);
+            }
+
+            template<typename Alloc, typename = Uses<Alloc>>
+            queue(queue &&_q, const Alloc &_a) {
+                std::scoped_lock(m_, _q.m_);
+                c_(std::move(_q.c_), _a);
+            }
+
+            bool empty() const {
+                std::lock_guard lk(m_);
+                return c_.empty();
+            }
+
+            size_type size() const {
+                std::lock_guard lk(m_);
+                return c_.size();
+            }
+
+            void push(const value_type &_x) {
+                {
+                    std::lock_guard lk(m_);
+                    c_.push_back(_x);
+                }
+                cv_.notify_one();
+            }
+
+            void push(value_type &&_x) {
+                {
+                    std::lock_guard lk(m_);
+                    c_.push_back(std::move(_x));
+                }
+                cv_.notify_one();
+            }
+
+            template<typename ...Args>
+            auto emplace(Args &&...args) {
+                std::unique_lock lk(m_);
+                auto res = c_.emplace_back(std::forward<Args>(args)...);
+                lk.unlock();
+                cv_.notify_one();
+                return res;
+            }
+
+            reference wait_pop() {
+                std::unique_lock lk(m_);
+                cv_.wait(lk, [&] { return !c_.empty(); });
+                reference elem = c_.front();
+                c_.pop_front();
+                return elem;
+            }
+
+            void swap(queue &_q) noexcept(std::__is_nothrow_swappable<Sequence>::value) {
+                using std::swap;
+                std::scoped_lock(m_, _q.m_);
+                swap(c_, _q.c_);
+            }
         };
 
-        T pop() {
-            std::unique_lock lk(mutex_);
-            pendingData_.wait(lk, [this] { return queue_.size() > 0; });
-            T ref = queue_.front();
-            queue_.pop();
-            return ref;
-        };
+        template<typename Tp, typename Seq>
+        inline bool operator==(const queue<Tp, Seq> &_x, const queue<Tp, Seq> &_y) {
+            std::scoped_lock(_x.m_, _y.m_);
+            return _x.c_ == _y.c_;
+        }
 
-        bool empty() {
-            std::lock_guard lk(mutex_);
-            return queue_.empty();
-        };
+        template<typename Tp, typename Seq>
+        inline bool operator<(const queue<Tp, Seq> &_x, const queue<Tp, Seq> &_y) {
+            std::scoped_lock(_x.m_, _y.m_);
+            return _x.c_ < _y.c_;
+        }
 
-    private:
-        std::queue<T> queue_;
-        std::condition_variable pendingData_;
-        std::mutex mutex_;
-    };
+        template<typename Tp, typename Seq>
+        inline bool operator!=(const queue<Tp, Seq> &_x, const queue<Tp, Seq> &_y) { return !(_x == _y); }
 
-    template<typename Rep, typename Period>
-    std::wstring formatSeconds(const std::chrono::duration<Rep, Period> &duration) {
-        auto seconds{std::chrono::duration_cast<std::chrono::seconds>(duration).count()};
-        if (seconds < 0) throw std::invalid_argument("seconds can't be negative");
-        std::tm time{};
-        time.tm_sec = seconds % 60;
-        seconds /= 60;
-        time.tm_min = seconds % 60;
-        seconds /= 60;
-        time.tm_hour = seconds % 60;
-        wchar_t buf[64];
-        std::wcsftime(buf, sizeof(buf), L"%H:%M:%S", &time);
-        return {buf};
+        template<typename Tp, typename Seq>
+        inline bool operator>(const queue<Tp, Seq> &_x, const queue<Tp, Seq> &_y) { return _y < _x; }
+
+        template<typename Tp, typename Seq>
+        inline bool operator<=(const queue<Tp, Seq> &_x, const queue<Tp, Seq> &_y) { return !(_y < _x); }
+
+        template<typename Tp, typename Seq>
+        inline bool operator>=(const queue<Tp, Seq> &_x, const queue<Tp, Seq> &_y) { return !(_x < _y); }
+
+#if __cpp_lib_three_way_comparison
+
+        template<typename Tp, std::three_way_comparable Seq>
+        inline std::compare_three_way_result_t<Seq> operator<=>(const queue<Tp, Seq> &_x, const queue<Tp, Seq> &_y) {
+            std::scoped_lock(_x.m_, _y.m_);
+            return _x.c_ <=> _y.c_;
+        }
+
+#endif
+
+        template<typename Tp, typename Seq>
+        inline typename std::enable_if<std::__is_swappable<Seq>::value>::type
+        swap(queue<Tp, Seq> &_x, queue<Tp, Seq> &_y) noexcept(noexcept(_x.swap(_y))) { _x.swap(_y); }
     }
 
-    std::wstring executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false);
-
-    std::wstring toWstring(const std::string &string);
-
-    std::string toString(const std::wstring &wstring);
-
+    /**
+     * Reader for .wav files
+     */
     class WavReader {
     public:
         static std::unique_ptr<char>
@@ -117,23 +198,65 @@ namespace utils {
         };
     };
 
-#ifndef __ANDROID__
+    enum TimewCommand {
+        NONE, CONTINUE, QUERY
+    };
 
-    inline unsigned int getAlAudioFormat(unsigned int channel, unsigned int bps) {
-        if (channel == 1) {
-            if (bps == 8) {
-                return AL_FORMAT_MONO8;
-            } else {
-                return AL_FORMAT_MONO16;
-            }
-        } else {
-            if (bps == 8) {
-                return AL_FORMAT_STEREO8;
-            } else {
-                return AL_FORMAT_STEREO16;
-            }
-        }
+    template<typename Rep, typename Period>
+    struct PomodoroSession {
+        std::chrono::duration<Rep, Period> focusDuration;
+        std::chrono::duration<Rep, Period> breakDuration;
+        TimewCommand timewCommand;
+    };
+
+    /**
+     * Executes a process and returns stdout or stderr as string
+     * @param path The path to the executable
+     * @param args The arguments to path to the executable
+     * @return stdout or stderr as a string
+     */
+    std::string executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false);
+
+    /**
+     * Formats the stdout of timew commands
+     * @param description The string returned from execute process
+     * @return The new formatted string
+     */
+    std::string formatDescription(const std::string &description);
+
+    /**
+     * Converts std::string to std::wstring
+     * @param string To be converted to std::wstring
+     * @return std::wstring
+     */
+    std::wstring stringToUtf(const std::string &string);
+
+    /**
+     * Converts std::wstring to std::string
+     * @param wstring To be converted to std::string
+     * @return std::string
+     */
+    std::string utfToString(const std::wstring &wstring);
+
+    /**
+     * Formats a duration as seconds (e.g. 00:00:00)
+     * @tparam Rep The type representing the period
+     * @tparam Period The period of time represented
+     * @param duration The duration to represent as seconds
+     * @return a string in the format "%H:%M:%S"
+     */
+    template<typename Rep, typename Period>
+    inline std::string formatSeconds(const std::chrono::duration<Rep, Period> &duration) {
+        auto seconds{std::chrono::duration_cast<std::chrono::seconds>(duration).count()};
+        if (seconds < 0) throw std::invalid_argument("seconds can't be negative");
+        std::tm time{};
+        time.tm_sec = seconds % 60;
+        seconds /= 60;
+        time.tm_min = seconds % 60;
+        seconds /= 60;
+        time.tm_hour = seconds % 60;
+        char buf[64];
+        std::strftime(buf, sizeof(buf), "%H:%M:%S", &time);
+        return {buf};
     }
-
-#endif
 }

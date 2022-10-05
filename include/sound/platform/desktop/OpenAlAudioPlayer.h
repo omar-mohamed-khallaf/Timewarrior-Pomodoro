@@ -11,8 +11,14 @@ public:
 
     ~OpenAlAudioPlayer();
 
+    /**
+     * Loads an audio file
+     */
     void load(const std::string &);
 
+    /**
+     * Plays an audio file
+     */
     void play(const std::string &);
 
 private:

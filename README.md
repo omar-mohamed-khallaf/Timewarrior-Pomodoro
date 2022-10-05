@@ -36,6 +36,7 @@ cmake --build build --parallel 4 --target install
 - [x] Support unicode
 - [x] Automatic session tracking by handling signals from taskwarrior hook scripts (Doesn't work for android )
 - [x] Handle text wrapping properly (automatically calculate starting line to ensure full text is displayed)
+- [x] Indicate whether it's a focus time or break time in the interface
 - [ ] Handle errors properly (is timew installed ?)
 - [ ] Make variables configurable
 - [ ] Confirm exit before exiting

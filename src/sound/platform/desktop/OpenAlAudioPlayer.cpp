@@ -68,7 +68,7 @@ static bool checkAlcErrors(const std::string &filename, const std::uint_fast32_t
 
 template<typename AlFunction, typename ...Params>
 static auto alCallImpl(const char *filename, std::uint_fast32_t line, AlFunction function,
-                       Params... params) -> typename std::enable_if_t<!std::is_same_v<void, decltype(function(
+                       Params... params) -> std::enable_if_t<!std::is_same_v<void, decltype(function(
         params...))>, decltype(function(params...))> {
     auto ret = function(std::forward<Params>(params)...);
     checkAlErrors(filename, line);
@@ -77,7 +77,7 @@ static auto alCallImpl(const char *filename, std::uint_fast32_t line, AlFunction
 
 template<typename AlFunction, typename ...Params>
 static auto alCallImpl(const char *filename, std::uint_fast32_t line, AlFunction function,
-                       Params... params) -> typename std::enable_if_t<std::is_same_v<void, decltype(function(
+                       Params... params) -> std::enable_if_t<std::is_same_v<void, decltype(function(
         params...))>, bool> {
     function(std::forward<Params>(params)...);
     return checkAlErrors(filename, line);
@@ -86,7 +86,7 @@ static auto alCallImpl(const char *filename, std::uint_fast32_t line, AlFunction
 template<typename AlcFunction, typename ReturnType, typename... Params>
 static auto alcCallImpl(const char *filename, const std::uint_fast32_t line, AlcFunction function, ReturnType &ret,
                         ALCdevice *device,
-                        Params... params) -> typename std::enable_if_t<!std::is_same_v<void, decltype(function(
+                        Params... params) -> std::enable_if_t<!std::is_same_v<void, decltype(function(
         params...))>, bool> {
     ret = function(std::forward<Params>(params)...);
     return checkAlcErrors(filename, line, device);
@@ -94,10 +94,26 @@ static auto alcCallImpl(const char *filename, const std::uint_fast32_t line, Alc
 
 template<typename AlcFunction, typename... Params>
 static auto alcCallImpl(const char *filename, const std::uint_fast32_t line, AlcFunction function, ALCdevice *device,
-                        Params... params) -> typename std::enable_if_t<std::is_same_v<void, decltype(function(
+                        Params... params) -> std::enable_if_t<std::is_same_v<void, decltype(function(
         params...))>, bool> {
     function(std::forward<Params>(params)...);
     return checkAlcErrors(filename, line, device);
+}
+
+static inline unsigned int getAlAudioFormat(unsigned int channel, unsigned int bps) {
+    if (channel == 1) {
+        if (bps == 8) {
+            return AL_FORMAT_MONO8;
+        } else {
+            return AL_FORMAT_MONO16;
+        }
+    } else {
+        if (bps == 8) {
+            return AL_FORMAT_STEREO8;
+        } else {
+            return AL_FORMAT_STEREO16;
+        }
+    }
 }
 
 OpenAlAudioPlayer::OpenAlAudioPlayer() : openALDevice_{alcOpenDevice(nullptr)} {
@@ -142,13 +158,13 @@ void OpenAlAudioPlayer::load(const std::string &audioFile) {
             if (size < 0) throw std::runtime_error("Failed to decode ogg file");
             decodedSound.insert(decodedSound.end(), buffer, buffer + size);
         }
-        alCall(alBufferData, alBuffer, utils::getAlAudioFormat(vorbisInfo->channels, 16), decodedSound.data(),
+        alCall(alBufferData, alBuffer, getAlAudioFormat(vorbisInfo->channels, 16), decodedSound.data(),
                decodedSound.size(), vorbisInfo->rate);
         ov_clear(&vorbisFile);
     } else if (extension == ".wav") {
         unsigned int channel, sampleRate, bps, size;
         auto buffer = utils::WavReader::loadWAV(audioFile, channel, sampleRate, bps, size);
-        alCall(alBufferData, alBuffer, utils::getAlAudioFormat(channel, bps), buffer.get(), size, sampleRate);
+        alCall(alBufferData, alBuffer, getAlAudioFormat(channel, bps), buffer.get(), size, sampleRate);
     } else {
         throw std::runtime_error("Unsupported audio format (" + extension + ")");
     }
