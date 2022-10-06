@@ -55,7 +55,10 @@ auto main() -> int {
         while (isRunning.load(std::memory_order_relaxed)) {
             auto task{taskQueue.wait_pop()};
             if (task.timewCommand == utils::TimewCommand::NONE) break;
+
             isPause.store(false, std::memory_order_relaxed);
+            cmdScreen.clear();
+            PUT_CENTERED(cmdScreen, "commands: (s)tart, (p)ause, (e)xit", 0);
 
             std::string taskDesc;
             try {
@@ -77,7 +80,7 @@ auto main() -> int {
                 cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(1));
             }
 
-            if (!countDown(tmrScreen, cmdScreen, "Break!", taskDesc, task.breakDuration)) continue;
+            if (!countDown(tmrScreen, cmdScreen, "Break", taskDesc, task.breakDuration)) continue;
 
             isPause.store(true, std::memory_order_relaxed);
             audioPlayer.play(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Synth_Brass.ogg");
