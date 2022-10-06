@@ -39,7 +39,7 @@ static auto countDown(const Ncurses::Screen &tmrScreen, const Ncurses::Screen &c
         prevTime = curTime;
     }
 
-    return duration.count() <= 0;
+    return isRunning.load(std::memory_order_relaxed) && !isPause.load(std::memory_order::relaxed);
 }
 
 auto main() -> int {

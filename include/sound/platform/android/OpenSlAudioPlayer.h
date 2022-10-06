@@ -26,7 +26,7 @@ public:
     /**
      * Plays an audio file
      */
-    void play(const std::string &);
+    void play(const std::string &) noexcept(true);
 
 private:
     SLEngineItf slEngineItf_{nullptr};
