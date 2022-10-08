@@ -18,9 +18,15 @@ public:
 
     ~OpenSlAudioPlayer();
 
+    /**
+     * Loads an audio file
+     */
     void load(const std::string &);
 
-    void play(const std::string &);
+    /**
+     * Plays an audio file
+     */
+    void play(const std::string &) const noexcept(true);
 
 private:
     SLEngineItf slEngineItf_{nullptr};

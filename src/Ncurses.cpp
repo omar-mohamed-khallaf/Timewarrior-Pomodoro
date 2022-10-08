@@ -37,11 +37,11 @@ Ncurses::Screen::~Screen() {
     delwin(window_);
 }
 
-int Ncurses::Screen::getCharToLower() {
+int Ncurses::Screen::getCharToLower() const {
     return std::tolower(wgetch(window_));
 }
 
-void Ncurses::Screen::putAt(const std::string &string, int y, int x) {
+void Ncurses::Screen::putAt(const std::string &string, int y, int x) const {
     wmove(window_, y, 0);
     wclrtoeol(window_);
     wmove(window_, y, x);
@@ -50,19 +50,19 @@ void Ncurses::Screen::putAt(const std::string &string, int y, int x) {
 }
 
 
-void Ncurses::Screen::putAt(const std::wstring &string, int y, int x) {
+void Ncurses::Screen::putAt(const std::wstring &string, int y, int x) const {
     wmove(window_, y, 0);
     wclrtoeol(window_);
     wmove(window_, y, x);
 #ifdef waddwstr
     waddwstr(window_, string.c_str());
 #else
-    waddstr(window_, utils::toString(string).c_str());
+    waddstr(window_, utils::utfToString(string).c_str());
 #endif
     wrefresh(window_);
 }
 
-void Ncurses::Screen::putFor(const std::string &string, int y, int x, std::chrono::seconds duration) {
+void Ncurses::Screen::putFor(const std::string &string, int y, int x, std::chrono::seconds duration) const {
     putAt(string, y, x);
     wrefresh(window_);
     std::this_thread::sleep_for(duration);
@@ -71,7 +71,7 @@ void Ncurses::Screen::putFor(const std::string &string, int y, int x, std::chron
     wrefresh(window_);
 }
 
-void Ncurses::Screen::putFor(const std::wstring &string, int y, int x, std::chrono::seconds duration) {
+void Ncurses::Screen::putFor(const std::wstring &string, int y, int x, std::chrono::seconds duration) const {
     putAt(string, y, x);
     wrefresh(window_);
     std::this_thread::sleep_for(duration);
@@ -126,7 +126,7 @@ static std::vector<std::wstring> getWrappedLines(const std::wstring &string, int
     return lines;
 }
 
-void Ncurses::Screen::putWrapped(const std::string &string, int y, int x, int width) {
+void Ncurses::Screen::putWrapped(const std::string &string, int y, int x, int width) const {
     auto lines{getWrappedLines(string, width)};
     y -= static_cast<int>(lines.size());
 
@@ -136,7 +136,7 @@ void Ncurses::Screen::putWrapped(const std::string &string, int y, int x, int wi
 
 }
 
-void Ncurses::Screen::putWrapped(const std::wstring &string, int y, int x, int width) {
+void Ncurses::Screen::putWrapped(const std::wstring &string, int y, int x, int width) const {
     auto lines{getWrappedLines(string, width)};
     y -= static_cast<int>(lines.size());
 
@@ -145,7 +145,7 @@ void Ncurses::Screen::putWrapped(const std::wstring &string, int y, int x, int w
     }
 }
 
-void Ncurses::Screen::putCentered(const std::string &string, int y, int width) {
+void Ncurses::Screen::putCentered(const std::string &string, int y, int width) const {
     auto lines{getWrappedLines(string, width)};
     y -= static_cast<int>(lines.size());
 
@@ -155,7 +155,7 @@ void Ncurses::Screen::putCentered(const std::string &string, int y, int width) {
     }
 }
 
-void Ncurses::Screen::putCentered(const std::wstring &string, int y, int width) {
+void Ncurses::Screen::putCentered(const std::wstring &string, int y, int width) const {
     auto lines{getWrappedLines(string, width)};
     y -= static_cast<int>(lines.size());
 
@@ -163,10 +163,26 @@ void Ncurses::Screen::putCentered(const std::wstring &string, int y, int width) 
         auto x{cols_ / 2 - static_cast<int>(line.size() / 2)};
         putAt(line, ++y, x);
     }
+}
+
+void Ncurses::Screen::putCenteredFor(const std::string &string, int y, int width, std::chrono::seconds duration) const {
+    auto lines{getWrappedLines(string, width)};
+    y -= static_cast<int>(lines.size());
+
+    for (auto const &line: lines) {
+        auto x{cols_ / 2 - static_cast<int>(line.size() / 2)};
+        putAt(line, ++y, x);
+    }
+    std::this_thread::sleep_for(duration);
+    for (auto i{y - static_cast<int>(lines.size()) + 1}; i < y; ++i) {
+        wmove(window_, i, 0);
+        wclrtoeol(window_);
+    }
+    wrefresh(window_);
 }
 
 void
-Ncurses::Screen::putCenteredFor(const std::string &string, int y, int width, std::chrono::seconds duration) {
+Ncurses::Screen::putCenteredFor(const std::wstring &string, int y, int width, std::chrono::seconds duration) const {
     auto lines{getWrappedLines(string, width)};
     y -= static_cast<int>(lines.size());
 
@@ -182,24 +198,7 @@ Ncurses::Screen::putCenteredFor(const std::string &string, int y, int width, std
     wrefresh(window_);
 }
 
-void Ncurses::Screen::putCenteredFor(const std::wstring &string, int y, int width,
-                                     std::chrono::seconds duration) {
-    auto lines{getWrappedLines(string, width)};
-    y -= static_cast<int>(lines.size());
-
-    for (auto const &line: lines) {
-        auto x{cols_ / 2 - static_cast<int>(line.size() / 2)};
-        putAt(line, ++y, x);
-    }
-    std::this_thread::sleep_for(duration);
-    for (auto i{y - static_cast<int>(lines.size()) + 1}; i < y; ++i) {
-        wmove(window_, i, 0);
-        wclrtoeol(window_);
-    }
-    wrefresh(window_);
-}
-
-int Ncurses::Screen::ask(const std::wstring &string, const std::wstring &validChars, unsigned int retries) {
+int Ncurses::Screen::ask(const std::wstring &string, const std::wstring &validChars, unsigned int retries) const {
     int ans;
     while (retries--) {
         putAt(string, 0, 0);
