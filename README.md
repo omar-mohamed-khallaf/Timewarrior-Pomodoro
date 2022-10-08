@@ -1,6 +1,6 @@
 # Pomodoro Timer for TimeWarrior
 
-***
+
 Pomodoro timer is a timer interface executing `timew continue` and `timew stop`
 commands to mimic pomodoro sessions with
 [timewarrior](https://github.com/GothenburgBitFactory/timewarrior) as the backend.

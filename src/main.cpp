@@ -25,7 +25,7 @@ static auto countDown(const Ncurses::Screen &tmrScreen, const Ncurses::Screen &c
     auto prevTime{std::chrono::steady_clock::now()};
 
     auto running{isRunning.load(std::memory_order::relaxed)}, pause{isPause.load(std::memory_order::relaxed)};
-    while (running && !pause) {
+    while (running && !pause && duration.count() > 0) {
         std::string secRep{utils::formatSeconds<Rep, Period>(duration)};
         tmrScreen.putCentered(title, 0, static_cast<int>(title.size()));
         tmrScreen.putCentered(secRep, 1, static_cast<int>(secRep.size()));
