@@ -19,7 +19,7 @@ public:
     /**
      * Plays an audio file
      */
-    void play(const std::string &) noexcept(true);
+    void play(const std::string &) const noexcept(true);
 
 private:
     ALCdevice *openALDevice_ = nullptr;

@@ -173,6 +173,6 @@ void OpenAlAudioPlayer::load(const std::string &audioFile) {
     audio_[audioFile] = alSource;
 }
 
-void OpenAlAudioPlayer::play(const std::string &audioFile) noexcept(true) {
+void OpenAlAudioPlayer::play(const std::string &audioFile) const noexcept(true) {
     alCall(alSourcePlay, audio_.at(audioFile));
 }
