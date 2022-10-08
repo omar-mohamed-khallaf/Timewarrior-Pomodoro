@@ -24,8 +24,8 @@ static auto countDown(const Ncurses::Screen &tmrScreen, const Ncurses::Screen &c
     std::chrono::duration<int64_t, std::nano> delta(0);
     auto prevTime{std::chrono::steady_clock::now()};
 
-    while (isRunning.load(std::memory_order_relaxed) && !isPause.load(std::memory_order_relaxed) &&
-           duration.count() > 0) {
+    auto running{isRunning.load(std::memory_order::relaxed)}, pause{isPause.load(std::memory_order::relaxed)};
+    while (running && !pause) {
         std::string secRep{utils::formatSeconds<Rep, Period>(duration)};
         tmrScreen.putCentered(title, 0, static_cast<int>(title.size()));
         tmrScreen.putCentered(secRep, 1, static_cast<int>(secRep.size()));
@@ -37,9 +37,11 @@ static auto countDown(const Ncurses::Screen &tmrScreen, const Ncurses::Screen &c
         delta = (timeSlept - sleepTime) % std::chrono::seconds(1);
         duration -= timeSlept;
         prevTime = curTime;
+        running = isRunning.load(std::memory_order::relaxed);
+        pause = isPause.load(std::memory_order::relaxed);
     }
 
-    return isRunning.load(std::memory_order_relaxed) && !isPause.load(std::memory_order::relaxed);
+    return running && !pause;
 }
 
 auto main() -> int {
