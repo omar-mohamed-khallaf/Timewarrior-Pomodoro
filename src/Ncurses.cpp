@@ -28,7 +28,7 @@ Ncurses::Screen::Screen(int height, int width, int y, int x) : lines_(height), c
     keypad(window_, true);
 }
 
-Ncurses::Screen::Screen(WINDOW *window) : lines_(LINES - 1), cols_(COLS - 1) {
+Ncurses::Screen::Screen(WINDOW *window) : lines_(LINES), cols_(COLS) {
     window_ = window;
     keypad(window_, true);
 }
@@ -42,6 +42,7 @@ int Ncurses::Screen::getCharToLower() const {
 }
 
 void Ncurses::Screen::putAt(const std::string &string, int y, int x) const {
+    if (y < 0 || y >= lines_) return;
     wmove(window_, y, 0);
     wclrtoeol(window_);
     wmove(window_, y, x);
@@ -51,6 +52,7 @@ void Ncurses::Screen::putAt(const std::string &string, int y, int x) const {
 
 
 void Ncurses::Screen::putAt(const std::wstring &string, int y, int x) const {
+    if (y < 0 || y >= lines_) return;
     wmove(window_, y, 0);
     wclrtoeol(window_);
     wmove(window_, y, x);
@@ -84,7 +86,7 @@ static std::vector<std::string> getWrappedLines(const std::string &string, int w
     std::vector<std::string> lines;
     auto strLen{string.length()};
 
-    for (auto i = 0; i < strLen;) {
+    for (auto i = 0u; i < strLen;) {
         auto charWrappedLine = string.substr(i, width);
         auto lastCharIdx{charWrappedLine.length() - 1};
 
@@ -107,7 +109,7 @@ static std::vector<std::wstring> getWrappedLines(const std::wstring &string, int
     std::vector<std::wstring> lines;
     auto strLen{string.length()};
 
-    for (auto i = 0; i < strLen;) {
+    for (auto i = 0u; i < strLen;) {
         auto charWrappedLine = string.substr(i, width);
         auto lastCharIdx{charWrappedLine.length() - 1};
 

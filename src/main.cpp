@@ -7,7 +7,7 @@
 #include "Ncurses.h"
 #include "sound/AudioPlayer.h"
 
-constexpr int tmrScreenLines = 2;
+static constexpr int tmrScreenLines = 2;
 
 static utils::concurrent::queue<utils::PomodoroSession<int64_t, std::nano>> taskQueue;
 static std::atomic<bool> isRunning = true;
@@ -69,7 +69,7 @@ auto main() -> int {
                 else if (task.timewCommand == utils::TimewCommand::QUERY)
                     taskDesc = utils::formatDescription(utils::executeProcess("/usr/bin/timew", {nullptr}));
             } catch (const std::runtime_error &error) {
-                cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(1));
+                cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(2));
                 continue;
             }
 
@@ -77,9 +77,9 @@ auto main() -> int {
 
             try {
                 audioPlayer.play(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Retro_Synth.ogg");
-                utils::executeProcess("/usr/bin/timew", {"stop", nullptr});
+                utils::executeProcess("/usr/bin/timew", {"stop", ":adjust", nullptr});
             } catch (const std::runtime_error &error) {
-                cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(1));
+                cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(2));
             }
 
             if (!countDown(tmrScreen, cmdScreen, "Break", taskDesc, task.breakDuration)) continue;
@@ -92,7 +92,7 @@ auto main() -> int {
     struct sigaction sa{.sa_flags = SA_RESTART | SA_NOCLDSTOP};
     sa.sa_handler = usr1SigHandler;
     if (sigaction(SIGUSR1, &sa, nullptr) == EINVAL) {
-        PUT_CENTERED_FOR(cmdScreen, "Unable to handle signals", cmdScreen.getLines() - 1, std::chrono::seconds(1));
+        cmdScreen.putFor("Unable to handle signals", cmdScreen.getLines() - 1, 0, std::chrono::seconds(1));
     }
 
     int cmdChar;
@@ -111,7 +111,7 @@ auto main() -> int {
                 try {
                     utils::executeProcess("/usr/bin/timew", {"stop", nullptr});
                 } catch (const std::runtime_error &error) {
-                    cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(1));
+                    cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(2));
                 }
                 break;
             case KEY_RESIZE:

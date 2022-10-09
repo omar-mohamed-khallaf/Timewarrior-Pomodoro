@@ -10,25 +10,32 @@
 
 std::string utils::executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false) {
     int fields[2];  // 0: read fd, 1: write fd
-    pipe(fields);
     char buf[256]{0};
     std::string output;
-    auto pid{vfork()};
+
+    if (pipe(fields) == -1) throw std::runtime_error("Failed to create pipe");
+    auto pid{fork()};
+
     switch (pid) {
         case -1:
             throw std::runtime_error("Failed to fork");
         case 0:
+            close(fields[0]);
             dup2(open("/dev/null", O_RDONLY), STDIN_FILENO);
             dup2(fields[1], STDOUT_FILENO);
             dup2(fields[1], STDERR_FILENO);
             execv(path.c_str(), (char *const *) (args.begin().base()));     // shouldn't return
-            break;
+            close(fields[1]);
+            _exit(-1);          // to terminate all threads
         default:
-            // TODO: handle errors
-            read(fields[0], buf, sizeof(buf));
-            waitpid(pid, nullptr, 0);
-            output.append(buf);
-            if (output.empty()) throw std::runtime_error("Failed to run " + path);
+            close(fields[1]);
+            auto status{0};
+            waitpid(pid, &status, 0);
+            while (read(fields[0], buf, sizeof(buf)) > 0) { output.append(buf); }
+            close(fields[0]);
+
+            if (WEXITSTATUS(status) == 127) throw std::runtime_error("Failed to exec: " + path);
+            else if (WEXITSTATUS(status) != 0) throw std::runtime_error("error: " + output);
             break;
     }
     output.append(1, '\n');                           // make sure we have a line end
@@ -37,7 +44,7 @@ std::string utils::executeProcess(const std::string &path, const std::vector<con
 
 std::string utils::formatDescription(const std::string &description) {
     std::string newDescription;
-    for (auto it {description.begin() + 9}; it < description.end(); ++it) { // skip "Tracking " word
+    for (auto it{description.begin() + 9}; it < description.end(); ++it) { // skip "Tracking " word
         if (*it != '\\')
             newDescription.append(1, *it);
     }

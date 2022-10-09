@@ -34,12 +34,12 @@ cmake --build build --parallel 4 --target install
 - [x] Parse output from child process
 - [x] Adapt to changes in terminal size
 - [x] Support unicode
-- [x] Automatic session tracking by handling signals from taskwarrior hook scripts (Doesn't work for android )
-- [x] Handle text wrapping properly (automatically calculate starting line to ensure full text is displayed)
+- [x] Automatic session tracking by handling signals from taskwarrior hook scripts (Doesn't work in termux )
+- [x] Handle text wrapping properly
 - [x] Indicate whether it's a focus time or break time in the interface
-- [ ] Handle errors properly (is timew installed ?)
-- [ ] Make variables configurable
+- [x] Handle errors properly
 - [ ] Confirm exit before exiting
+- [ ] Make variables configurable
 - [ ] Support for `timew start <tags...>` in the interface
 - [ ] Use ascii art to print digits adapted to the size of the terminal
 
