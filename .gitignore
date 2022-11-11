@@ -92,7 +92,7 @@ CMakeUserPresets.json
 # External projects
 *-prefix/
 build/
-cmake-build-debug/
+cmake-build-*/
 
 ### Intellij+all ###
 .idea/

@@ -3,6 +3,13 @@ project(tw-pomodoro VERSION "2.3.2")
 
 configure_file(include/config.h.in config.h)
 set(CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=leak -fsanitize=undefined")
+set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=leak -fsanitize=undefined")
+
+if (NOT CMAKE_BUILD_TYPE)
+    message(STATUS "No build type selected, default to Release")
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
 
 aux_source_directory(src/ SRC)
 
@@ -11,8 +18,6 @@ if (ANDROID)
 else ()
     aux_source_directory(src/sound/platform/desktop SRC)
 endif ()
-
-aux_source_directory(src/sound SRC)
 
 add_executable(${PROJECT_NAME} ${SRC})
 
@@ -30,13 +35,10 @@ else ()
     find_library(VORBIS_FILE vorbisfile REQUIRED)
     target_link_libraries(${PROJECT_NAME} ${NCURSES} ${OPENAL} ${VORBIS} ${VORBIS_FILE})
 
+    install(PROGRAMS extras/scripts/on-modify.99-tw-pomodoro
+            DESTINATION $ENV{HOME}/.task/hooks/
+            PERMISSIONS OWNER_READ OWNER_EXECUTE)
 endif ()
-
-if (NOT ANDROID)
-install(PROGRAMS extras/scripts/on-modify.99-tw-pomodoro
-        DESTINATION $ENV{HOME}/.task/hooks/
-        PERMISSIONS OWNER_READ OWNER_EXECUTE)
-endif()
 
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION bin
