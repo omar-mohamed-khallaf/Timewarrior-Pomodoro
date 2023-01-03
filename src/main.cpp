@@ -14,8 +14,8 @@ static std::atomic<bool> isRunning = true;
 static std::atomic<bool> isPause = true;
 
 static auto usr1SigHandler(int) {
-    if (isPause.load(std::memory_order::relaxed))
-        taskQueue.push({std::chrono::minutes(25), std::chrono::minutes(5), utils::TimewCommand::QUERY});
+    isPause.store(true, std::memory_order::relaxed);
+    taskQueue.push({std::chrono::minutes(25), std::chrono::minutes(5), utils::TimewCommand::QUERY});
 }
 
 template<typename Rep, typename Period>
@@ -109,10 +109,8 @@ auto main() -> int {
             case 'p':
                 isPause.store(true, std::memory_order_relaxed);
                 try {
-                    utils::executeProcess("/usr/bin/timew", {"stop", nullptr});
-                } catch (const std::runtime_error &error) {
-                    cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(2));
-                }
+                    utils::executeProcess("/usr/bin/timew", {"stop", ":adjust", nullptr});
+                } catch (const std::runtime_error &error) {}
                 break;
             case KEY_RESIZE:
                 int lines, cols;
