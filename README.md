@@ -48,7 +48,7 @@ cmake --build build --parallel 4 --target install
 There are only three commands for now
 
 ```text
-s: to start a session followed by a break
+c: to continue a session followed by a break (must be started by taskwarrior & the hook script)
 p: to pause the current session (actually stops it in timewarrior terms)
 e: to exit
 ```

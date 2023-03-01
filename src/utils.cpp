@@ -8,9 +8,11 @@
 
 #include "utils.h"
 
-std::string utils::executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false) {
+utils::ProcessResult
+utils::executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false) {
     int fields[2];  // 0: read fd, 1: write fd
     char buf[256]{0};
+    auto status{0};
     std::string output;
 
     if (pipe(fields) == -1) throw std::runtime_error("Failed to create pipe");
@@ -29,23 +31,23 @@ std::string utils::executeProcess(const std::string &path, const std::vector<con
             _exit(-1);          // to terminate all threads
         default:
             close(fields[1]);
-            auto status{0};
             waitpid(pid, &status, 0);
             while (read(fields[0], buf, sizeof(buf)) > 0) { output.append(buf); }
             close(fields[0]);
 
             if (WEXITSTATUS(status) == 127) throw std::runtime_error("Failed to exec: " + path);
-            else if (WEXITSTATUS(status) != 0) throw std::runtime_error("error: " + output);
             break;
     }
-    output.append(1, '\n');                           // make sure we have a line end
-    return output.substr(0, output.find('\n') + 1);   // get one line from output
+    output.append(1, '\n');                                     // make sure we have a line end
+    return {static_cast<uint8_t>(WEXITSTATUS(status)), output}; // get one line from output
 }
 
 std::string utils::formatDescription(const std::string &description) {
     std::string newDescription;
     for (auto it{description.begin() + 9}; it < description.end(); ++it) { // skip "Tracking " word
-        if (*it != '\\')
+        if (*it == '\n')
+            break;
+        else if (*it != '\\')
             newDescription.append(1, *it);
     }
     return newDescription;
