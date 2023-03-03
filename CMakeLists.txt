@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(tw-pomodoro VERSION "2.3.3")
+project(tw-pomodoro VERSION "2.4.0")
 
 configure_file(include/config.h.in config.h)
 set(CMAKE_CXX_STANDARD 20)

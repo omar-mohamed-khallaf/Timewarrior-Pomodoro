@@ -12,6 +12,7 @@
 
 #endif
 
+
 namespace utils {
     namespace concurrent {
         /**
@@ -189,24 +190,18 @@ namespace utils {
         };
     };
 
-    enum TimewCommand {
-        NONE, CONTINUE, QUERY
-    };
-
-    template<typename Rep, typename Period>
-    struct PomodoroSession {
-        std::chrono::duration<Rep, Period> focusDuration;
-        std::chrono::duration<Rep, Period> breakDuration;
-        TimewCommand timewCommand;
+    struct ProcessResult {
+        uint8_t exitCode;
+        std::string output;
     };
 
     /**
      * Executes a process and returns stdout or stderr as string
      * @param path The path to the executable
      * @param args The arguments to path to the executable
-     * @return stdout or stderr as a string
+     * @return ProcessResult struct containing the output and the exit code
      */
-    std::string executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false);
+    ProcessResult executeProcess(const std::string &path, const std::vector<const char *> &args) noexcept(false);
 
     /**
      * Formats the stdout of timew commands

@@ -3,19 +3,19 @@
 #include <csignal>
 
 #include "utils.h"
+#include "Timew.h"
 #include "config.h"
 #include "Ncurses.h"
 #include "sound/AudioPlayer.h"
 
 static constexpr int tmrScreenLines = 2;
 
-static utils::concurrent::queue<utils::PomodoroSession<int64_t, std::nano>> taskQueue;
-static std::atomic<bool> isRunning = true;
-static std::atomic<bool> isPause = true;
+static utils::concurrent::queue<PomodoroSession<int64_t, std::nano>> taskQueue;
+static std::atomic<bool> isRunning = true, isPause = true;
 
 static auto usr1SigHandler(int) {
     isPause.store(true, std::memory_order::relaxed);
-    taskQueue.push({std::chrono::minutes(25), std::chrono::minutes(5), utils::TimewCommand::QUERY});
+    taskQueue.push({std::chrono::minutes(25), std::chrono::minutes(5), TimewCommand::QUERY});
 }
 
 template<typename Rep, typename Period>
@@ -56,33 +56,43 @@ auto main() -> int {
 
         while (isRunning.load(std::memory_order_relaxed)) {
             auto task{taskQueue.wait_pop()};
-            if (task.timewCommand == utils::TimewCommand::NONE) break;
+            if (task.timewCommand == TimewCommand::NONE) break;
 
             isPause.store(false, std::memory_order_relaxed);
             cmdScreen.clear();
-            PUT_CENTERED(cmdScreen, "commands: (s)tart, (p)ause, (e)xit", 0);
+            PUT_CENTERED(cmdScreen, "commands: (c)ontinue, (p)ause, (e)xit", 0);
 
-            std::string taskDesc;
+            auto timewQuery = Timew::query();
+            std::string taskDescription{std::move(timewQuery.taskDescription)};
+            std::chrono::duration<int64_t, std::nano> focusDuration{task.focusDuration};
+
             try {
-                if (task.timewCommand == utils::TimewCommand::CONTINUE)
-                    taskDesc = utils::formatDescription(utils::executeProcess("/usr/bin/timew", {"continue", nullptr}));
-                else if (task.timewCommand == utils::TimewCommand::QUERY)
-                    taskDesc = utils::formatDescription(utils::executeProcess("/usr/bin/timew", {nullptr}));
+                if (task.timewCommand == TimewCommand::RESUME) {
+                    if (timewQuery.isTracking) {
+                        if (timewQuery.trackedTime > task.focusDuration)
+                            focusDuration = std::chrono::duration<long, std::nano>(0);
+                        else
+                            focusDuration = task.focusDuration - timewQuery.trackedTime;
+                    } else {
+                        taskDescription = utils::formatDescription(Timew::resume().output);
+                    }
+                }
             } catch (const std::runtime_error &error) {
                 cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(2));
+                isPause.store(true, std::memory_order_relaxed);
                 continue;
             }
 
-            if (!countDown(tmrScreen, cmdScreen, "Focus!", taskDesc, task.focusDuration)) continue;
+            if (!countDown(tmrScreen, cmdScreen, "Focus!", taskDescription, focusDuration)) continue;
 
             try {
                 audioPlayer.play(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Retro_Synth.ogg");
-                utils::executeProcess("/usr/bin/timew", {"stop", ":adjust", nullptr});
+                Timew::stop();
             } catch (const std::runtime_error &error) {
                 cmdScreen.putFor(error.what(), cmdScreen.getLines() - 1, 0, std::chrono::seconds(2));
             }
 
-            if (!countDown(tmrScreen, cmdScreen, "Break", taskDesc, task.breakDuration)) continue;
+            if (!countDown(tmrScreen, cmdScreen, "Break", taskDescription, task.breakDuration)) continue;
 
             isPause.store(true, std::memory_order_relaxed);
             audioPlayer.play(PROJECT_INSTALL_PREFIX "/share/" PROJECT_NAME "/sounds/Synth_Brass.ogg");
@@ -96,12 +106,12 @@ auto main() -> int {
     }
 
     int cmdChar;
-    PUT_CENTERED(cmdScreen, "commands: (s)tart, (p)ause, (e)xit", 0);
+    PUT_CENTERED(cmdScreen, "commands: (c)ontinue, (p)ause, (e)xit", 0);
     while ((cmdChar = cmdScreen.getCharToLower()) != 'e') {
         switch (cmdChar) {
-            case 's':
+            case 'c':
                 if (isPause.load(std::memory_order::relaxed)) {
-                    taskQueue.push({std::chrono::minutes(25), std::chrono::minutes(5), utils::TimewCommand::CONTINUE});
+                    taskQueue.push({std::chrono::minutes(25), std::chrono::minutes(5), TimewCommand::RESUME});
                 } else {
                     cmdScreen.putFor("Timer is already running", cmdScreen.getLines() - 1, 0, std::chrono::seconds(1));
                 }
@@ -109,7 +119,7 @@ auto main() -> int {
             case 'p':
                 isPause.store(true, std::memory_order_relaxed);
                 try {
-                    utils::executeProcess("/usr/bin/timew", {"stop", ":adjust", nullptr});
+                    Timew::stop();
                 } catch (const std::runtime_error &error) {}
                 break;
             case KEY_RESIZE:
@@ -117,7 +127,7 @@ auto main() -> int {
                 getmaxyx(stdscr, lines, cols);
                 cmdScreen.resize(lines, cols);
                 tmrScreen.resize(tmrScreenLines, cols);
-                PUT_CENTERED(cmdScreen, "commands: (s)tart, (p)ause, (e)xit", 0);
+                PUT_CENTERED(cmdScreen, "commands: (c)ontinue, (p)ause, (e)xit", 0);
                 break;
             default:
                 break;
