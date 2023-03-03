@@ -70,7 +70,7 @@ So a normal workflow is like this:
 - you have your tasks stored in taskwarrior
 - you have tw-pomodoro opened in another window, pane, ...
 - you `task 1 start` and tw-pomodoro automatically starts the timer and notifies you at the end of sessions
-- after a break you press `s` and start your next session
+- after a break you press `c` and start your next session
 
 ## Contributing
 
